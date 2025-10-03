@@ -1,3 +1,4 @@
 glfw~=2.10.0
 numpy~=2.3.3
 pyopengl~=3.1.10
+imgui[glfw] ~= 2.0.0

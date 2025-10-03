@@ -1,29 +1,9 @@
 from OpenGL.GL import *
-from OpenGL.GL.shaders import compileProgram, compileShader
+from shader import Shader
 
 import math
 import numpy as np
 
-# C'est temporaire, le temps que je fasses une class Shader
-# Vertex shader source
-vertex_src = """
-# version 330 core
-in vec2 a_position;
-void main()
-{
-    gl_Position = vec4(a_position, 0.0, 1.0);
-}
-"""
-
-# Fragment shader source
-fragment_src = """
-# version 330 core
-out vec4 frag_color;
-void main()
-{
-    frag_color = vec4(1.0, 1.0, 1.0, 1.0);
-}
-"""
 
 class TurtleRenderer:
     """
@@ -44,11 +24,8 @@ class TurtleRenderer:
         - Prépare l'attribut de position des sommets
         """
         # Compiler et lier les shaders
-        shader = compileProgram(
-            compileShader(vertex_src, GL_VERTEX_SHADER),
-            compileShader(fragment_src, GL_FRAGMENT_SHADER)
-        )
-        glUseProgram(shader)
+        shader = Shader("turtle")
+        shader.use()
 
         # Générer et binder un VAO (stocke la configuration des attributs)
         self.vao = glGenVertexArrays(1)
@@ -58,7 +35,7 @@ class TurtleRenderer:
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
 
         # Associer l'attribut "a_position" du shader aux données du VBO
-        position = glGetAttribLocation(shader, "a_position")
+        position = glGetAttribLocation(shader.getProgram(), "a_position")
         glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(position)
 
@@ -71,8 +48,6 @@ class TurtleRenderer:
 
         :param turtle: objet contenant la position, l'angle et les sommets du chemin
         """
-
-
         vertices = turtle.get_vertices()
         if len(vertices) > 0:
             glBindVertexArray(self.vao)
