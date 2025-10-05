@@ -3,12 +3,15 @@ from OpenGL.GL import *
 
 from turtleRenderer import *
 from returtle import Turtle
+from imguiRenderer import ImGuiRenderer
+from imgui import show_demo_window
 
 
 fenetre = Window(800,600,"Test fenetre")
 # juste le temps que je le mettes a un meilleur endroit
 # c'est pour afficher la tortue
 turtleRenderer = TurtleRenderer()
+imguiRenderer = ImGuiRenderer(fenetre.getWindow()) # ImGui est la librarie que je vais utiliser pour debugger les shaders car c'est facile a mettre en place
 # attention c'est pas les memes distances que la vrai turtle ;)
 # Ce n'est pas les pixels que tu dois donner mais les pourcentages de l'écran
 # car on ne pourras pas prevoir la taille de la fenetre
@@ -36,10 +39,11 @@ t.down()
 flocon_koch(2)
 
 while not fenetre.devrait_fermer():
+    imguiRenderer.newFrame()
     glClear(GL_COLOR_BUFFER_BIT)
-
     turtleRenderer.render(t)
 
+    imguiRenderer.endFrame()
     fenetre.swapbuffer()
 
 

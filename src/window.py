@@ -53,20 +53,20 @@ class Window:
             raise Exception("GLFW n'a pas pu être initialisé")
 
         # Créer la fenêtre
-        self.window = glfw.create_window(width, height, title, None, None)
+        self.__window = glfw.create_window(width, height, title, None, None)
 
-        if not self.window:
+        if not self.__window:
             glfw.terminate()
             raise Exception("La fenêtre GLFW n'a pas pu être créée")
 
         # Rendre le contexte OpenGL actuel (lié à cette fenêtre)
-        glfw.make_context_current(self.window)
+        glfw.make_context_current(self.__window)
 
         # Associer la fonction de callback au redimensionnement
-        glfw.set_window_size_callback(self.window, on_resize)
+        glfw.set_window_size_callback(self.__window, on_resize)
 
         # Configurer la vue initiale
-        on_resize(self.window, width, height)
+        on_resize(self.__window, width, height)
 
     def swapbuffer(self):
         """
@@ -75,7 +75,7 @@ class Window:
         - échange les buffers pour afficher la scène rendue
         """
         glfw.poll_events()
-        glfw.swap_buffers(self.window)
+        glfw.swap_buffers(self.__window)
 
     def supprimer(self):
         """
@@ -88,4 +88,7 @@ class Window:
         Vérifie si l'utilisateur a demandé la fermeture de la fenêtre.
         :return: True si la fenêtre doit être fermée, False sinon
         """
-        return glfw.window_should_close(self.window)
+        return glfw.window_should_close(self.__window)
+
+    def getWindow(self):
+        return self.__window

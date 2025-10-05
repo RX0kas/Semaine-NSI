@@ -77,7 +77,6 @@ class Shader:
         :return: contenu du fichier (chaîne de caractères) ou None en cas d'erreur
         """
         chemin = os.path.join(os.path.dirname(__file__),"shaders",f"{name}.glsl")
-        print(chemin)
         try:
             with open(chemin, "r") as f:
                 content = f.read()
