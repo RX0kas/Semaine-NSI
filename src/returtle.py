@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from src.turtleRenderer import TurtleRenderer
 
 class Turtle:
     """
@@ -9,6 +10,8 @@ class Turtle:
     Lorsqu'elle se déplace avec le stylo en bas, elle trace un segment de ligne.
     Les coordonnées des segments sont stockées et utilisées par le renderer.
     """
+
+    __instance = None
 
     def __init__(self, x=0, y=0, angle=0):
         """
@@ -24,9 +27,16 @@ class Turtle:
         self.pen_down = True  # par défaut, la tortue trace
         self.vertices = []  # segments déjà terminés (liste de sommets)
         self.current_path = []  # segment en cours de tracé (non encore validé)
+        self.turtle_size = 0.05
         self.show_turtle = True
         if self.pen_down:
             self.current_path = [self.x, self.y]
+
+        if Turtle.__instance is not None:
+            raise PermissionError("Turtle ne peux pas avoir plus d'une instance")
+        Turtle.__instance = self
+
+
 
     def forward(self, distance):
         """
@@ -123,6 +133,12 @@ class Turtle:
         # Mise à jour de la position
         self.x = x
         self.y = y
+
+    @staticmethod
+    def get_turtle():
+        if Turtle.__instance is None:
+            raise NotImplementedError("Turtle n'a pas été initialisé. Il ne faut pas utiliser get_turtle() avant d'avoir créé une Application")
+        return Turtle.__instance
 
 
     #############################################

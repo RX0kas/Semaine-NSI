@@ -15,7 +15,6 @@ class TurtleRenderer:
     - L'affichage du chemin tracé par la tortue
     - L'affichage de la tortue elle-même (représentée par un triangle)
     """
-    __imguiData = ()
 
     def __init__(self):
         """
@@ -39,9 +38,11 @@ class TurtleRenderer:
         position = glGetAttribLocation(shader.getProgram(), "a_position")
         glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(position)
+
+        self.turtle_size = 0.05
     
 
-    def render(self, turtle):
+    def render(self):
         """
         Rendu de la scène :
         - Efface l'écran
@@ -50,6 +51,9 @@ class TurtleRenderer:
 
         :param turtle: objet contenant la position, l'angle et les sommets du chemin
         """
+        from src.returtle import Turtle
+        turtle = Turtle.get_turtle()
+
         # --- Affichage du chemin (lignes) ---
         vertices = turtle.get_vertices()
         if len(vertices) > 0:
@@ -75,13 +79,13 @@ class TurtleRenderer:
         if turtle.show_turtle:
             self.__draw_turtle(turtle)
 
-    def __draw_turtle(self, turtle):
+    def __draw_turtle(self,turtle):
         """
         Dessine la tortue sous forme de petit triangle orienté.
 
         :param turtle: objet avec attributs (x, y, angle) représentant la tortue
         """
-        size = 0.05  # taille du triangle
+        size = turtle.turtle_size
         angle_rad = math.radians(turtle.angle)  # orientation de la tortue en radians
 
         # Triangle en coordonnées locales (avant rotation et translation)

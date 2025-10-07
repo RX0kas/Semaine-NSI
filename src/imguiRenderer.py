@@ -1,6 +1,6 @@
 import glfw
 from imgui_bundle import imgui, imgui_ctx
-from imgui_bundle.python_backends import glfw_backend
+from src.backend import glfw_backend
 from src.returtle import Turtle
 
 class ImGuiRenderer:
@@ -30,15 +30,16 @@ class ImGuiRenderer:
         glfw.make_context_current(backup_current_context)
         
 
-    def show_debug_window(self,t:Turtle):
+    def show_debug_window(self):
         if self.__showDebug:
+            t = Turtle.get_turtle()
             imgui.begin("Debug")
             if imgui.collapsing_header("Turtle"):
                 imgui.separator_text("ReTurtle")
                 imgui.text(f"Angle: {t.angle}")
-                imgui.text(f"Positon: ({round(t.x*100,2)},{round(t.y*100,2)}")
-                _, t.pen_down = imgui.checkbox("Dessine: ",t.pen_down)
+                imgui.text(f"Positon: ({round(t.x*100,2)},{round(t.y*100,2)})")
                 imgui.separator_text("Renderer")
                 imgui.text(f"Vertex num: {len(t.get_vertices())}")
-                _, t.show_turtle = imgui.checkbox("Dessine tortue: ",t.show_turtle)
+                _, t.show_turtle = imgui.checkbox("Dessine tortue",t.show_turtle)
+                _, t.turtle_size = imgui.slider_float("Taille", t.turtle_size, 0.001, 1)
             imgui.end()

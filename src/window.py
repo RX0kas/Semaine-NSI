@@ -1,4 +1,4 @@
-import glfw
+from glfw import *
 from OpenGL.GL import *
 
 
@@ -49,30 +49,33 @@ class Window:
         :param title: titre de la fenêtre
         """
         # Initialiser la bibliothèque GLFW
-        if not glfw.init():
+        if not init():
             raise Exception("GLFW n'a pas pu être initialisé")
         
-        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-
-        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
+        window_hint(CONTEXT_VERSION_MAJOR, 3)
+        window_hint(CONTEXT_VERSION_MINOR, 3)
+        window_hint(OPENGL_PROFILE, OPENGL_CORE_PROFILE)
+        window_hint(VISIBLE,GL_FALSE)
+        window_hint(OPENGL_FORWARD_COMPAT, GL_TRUE)
 
         # Créer la fenêtre
-        self.__window = glfw.create_window(width, height, title, None, None)
+        self.__window = create_window(width, height, title, None, None)
 
         if not self.__window:
-            glfw.terminate()
+            terminate()
             raise Exception("La fenêtre GLFW n'a pas pu être créée")
 
         # Rendre le contexte OpenGL actuel (lié à cette fenêtre)
-        glfw.make_context_current(self.__window)
+        make_context_current(self.__window)
 
         # Associer la fonction de callback au redimensionnement
-        glfw.set_window_size_callback(self.__window, on_resize)
+        set_window_size_callback(self.__window, on_resize)
 
         # Configurer la vue initiale
         on_resize(self.__window, width, height)
+
+    def show(self):
+        show_window(self.__window)
 
     def swapbuffer(self):
         """
@@ -80,21 +83,21 @@ class Window:
         - traite les événements (clavier, souris, etc.)
         - échange les buffers pour afficher la scène rendue
         """
-        glfw.poll_events()
-        glfw.swap_buffers(self.__window)
+        poll_events()
+        swap_buffers(self.__window)
 
     def supprimer(self):
         """
         Libère les ressources GLFW et ferme la fenêtre.
         """
-        glfw.terminate()
+        terminate()
 
     def devrait_fermer(self):
         """
         Vérifie si l'utilisateur a demandé la fermeture de la fenêtre.
         :return: True si la fenêtre doit être fermée, False sinon
         """
-        return glfw.window_should_close(self.__window)
+        return window_should_close(self.__window)
 
     def getWindow(self):
         return self.__window

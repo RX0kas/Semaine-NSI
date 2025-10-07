@@ -1,52 +1,29 @@
-from src.window import Window
-from OpenGL.GL import *
-from src.turtleRenderer import *
+from src.application import Application
 from src.returtle import Turtle
-from src.imguiRenderer import ImGuiRenderer
 
-def ligne_koch(profondeur : int,t, taille : int = 180):
+def ligne_koch(profondeur : int, taille : int = 180):
+    t = Turtle.get_turtle()
+
     if profondeur==0:
         t.forward(taille)
     else:
-        ligne_koch(profondeur-1,t, taille/3)
+        ligne_koch(profondeur-1, taille/3)
         t.left(60)
-        ligne_koch(profondeur-1,t, taille/3)
+        ligne_koch(profondeur-1, taille/3)
         t.right(120)
-        ligne_koch(profondeur-1,t, taille/3)
+        ligne_koch(profondeur-1, taille/3)
         t.left(60)
-        ligne_koch(profondeur-1,t, taille/3)
+        ligne_koch(profondeur-1, taille/3)
 
 
 if __name__ == "__main__":
-    fenetre = Window(800,600,"Test fenetre")
-    # juste le temps que je le mettes a un meilleur endroit
-    # c'est pour afficher la tortue
-    turtleRenderer = TurtleRenderer()
-    imguiRenderer = ImGuiRenderer(fenetre.getWindow()) # ImGui est la librarie que je vais utiliser pour debugger les shaders car c'est facile a mettre en place
-    # attention c'est pas les memes distances que la vrai turtle ;)
-    # Ce n'est pas les pixels que tu dois donner mais les pourcentages de l'écran
-    # car on ne pourras pas prevoir la taille de la fenetre
-    t = Turtle()
-    
-    glClearColor(0.5,0.5,0.5,1) # Couleur du fond (temporaire)
-
-
-
+    r = Application()
+    t = Turtle.get_turtle()
 
     t.up()
     t.goto(-90, -90)
     t.down()
 
-    ligne_koch(5,t)
+    ligne_koch(5)
 
-    while not fenetre.devrait_fermer():
-        imguiRenderer.newFrame()
-        glClear(GL_COLOR_BUFFER_BIT)
-        turtleRenderer.render(t)
-
-        imguiRenderer.endFrame()
-        fenetre.swapbuffer()
-
-
-    turtleRenderer.cleanup()
-    fenetre.supprimer()
+    r.run()
