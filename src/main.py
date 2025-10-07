@@ -4,7 +4,6 @@ from OpenGL.GL import *
 from turtleRenderer import *
 from returtle import Turtle
 from imguiRenderer import ImGuiRenderer
-from imgui import show_demo_window
 
 
 fenetre = Window(800,600,"Test fenetre")
