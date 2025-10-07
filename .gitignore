@@ -1,3 +1,5 @@
 venv_semaine_nsi/
 .venv/
 .idea/
+__pycache__
+*.ini
