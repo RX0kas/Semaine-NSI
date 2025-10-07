@@ -1,7 +1,7 @@
 import os.path
 
 from OpenGL.GL import *
-from exception import ShaderType, ShaderError
+from src.exception import ShaderType, ShaderError
 from ctypes import c_uint
 
 

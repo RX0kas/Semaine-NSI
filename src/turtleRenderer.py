@@ -1,5 +1,5 @@
 from OpenGL.GL import *
-from shader import Shader
+from src.shader import Shader
 
 import math
 import numpy as np

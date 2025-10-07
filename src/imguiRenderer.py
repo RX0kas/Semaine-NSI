@@ -1,11 +1,8 @@
 import glfw
-from time import time
 from imgui_bundle import imgui, imgui_ctx
-from imgui_bundle.python_backends import glfw_backend,opengl_base_backend
-from returtle import Turtle
+from imgui_bundle.python_backends import glfw_backend
+from src.returtle import Turtle
 
-# OpenGL: https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.cpp et https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.h
-# GLFW: https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.cpp et https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.h
 class ImGuiRenderer:
     def __init__(self, window):
         imgui.create_context()

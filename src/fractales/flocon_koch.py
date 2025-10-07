@@ -1,12 +1,8 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-from window import Window
+from src.window import Window
 from OpenGL.GL import *
-from turtleRenderer import *
-from returtle import Turtle
-from imguiRenderer import ImGuiRenderer
+from src.turtleRenderer import *
+from src.returtle import Turtle
+from src.imguiRenderer import ImGuiRenderer
 from ligne_koch import ligne_koch
 
 def flocon_koch(profondeur : int, t):
