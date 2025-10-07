@@ -1,33 +1,47 @@
 import glfw
 from time import time
-from imgui_bundle import imgui, hello_imgui
+from imgui_bundle import imgui, imgui_ctx
+from imgui_bundle.python_backends import glfw_backend,opengl_base_backend
+from returtle import Turtle
 
-# TODO: Reecrire entierement le backend:
 # OpenGL: https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.cpp et https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.h
 # GLFW: https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.cpp et https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.h
 class ImGuiRenderer:
     def __init__(self, window):
-        pass
-        """imgui.create_context()
-
+        imgui.create_context()
+        
+        self.__GLFWimpl = glfw_backend.GlfwRenderer(window)
         io = imgui.get_io()
+        
         io.config_flags |= imgui.ConfigFlags_.docking_enable
         io.config_flags |= imgui.ConfigFlags_.viewports_enable
-
+        
         self.__window = window
-        self.__showDebug = False
+        self.__showDebug = True
         self.__lastPressed = 0.0
-        self.__timer = 0.1  # anti-spam clavier"""
+        self.__timer = 0.1  # anti-spam clavier
 
     def newFrame(self):
-        pass
+        imgui.new_frame()
 
     def endFrame(self):
-        pass
+        imgui.render()
+        self.__GLFWimpl.render(imgui.get_draw_data())        
+        backup_current_context = glfw.get_current_context()
+        imgui.update_platform_windows()
+        imgui.render_platform_windows_default()
+        glfw.make_context_current(backup_current_context)
+        
 
-    def show_debug_window(self):
-        """if self.__showDebug:
+    def show_debug_window(self,t:Turtle):
+        if self.__showDebug:
             imgui.begin("Debug")
-            imgui.text("Debug ON (press F3 to toggle)")
-            imgui.end()"""
-        pass
+            if imgui.collapsing_header("Turtle"):
+                imgui.separator_text("ReTurtle")
+                imgui.text(f"Angle: {t.angle}")
+                imgui.text(f"Positon: ({round(t.x*100,2)},{round(t.y*100,2)}")
+                _, t.pen_down = imgui.checkbox("Dessine: ",t.pen_down)
+                imgui.separator_text("Renderer")
+                imgui.text(f"Vertex num: {len(t.get_vertices())}")
+                _, t.show_turtle = imgui.checkbox("Dessine tortue: ",t.show_turtle)
+            imgui.end()

@@ -15,6 +15,7 @@ class TurtleRenderer:
     - L'affichage du chemin tracé par la tortue
     - L'affichage de la tortue elle-même (représentée par un triangle)
     """
+    __imguiData = ()
 
     def __init__(self):
         """
@@ -38,27 +39,7 @@ class TurtleRenderer:
         position = glGetAttribLocation(shader.getProgram(), "a_position")
         glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(position)
-
-    def render(self, turtle):
-        """
-        Rendu de la scène :
-        - Efface l'écran
-        - Dessine le chemin parcouru par la tortue
-        - Dessine la tortue à sa position actuelle
-
-        :param turtle: objet contenant la position, l'angle et les sommets du chemin
-        """
-        vertices = turtle.get_vertices()
-        if len(vertices) > 0:
-            glBindVertexArray(self.vao)
-            glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
-            # Charger les sommets du chemin dans le buffer GPU
-            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-            # Dessiner des lignes (chaque 2 sommets = un segment)
-            glDrawArrays(GL_LINES, 0, len(vertices) // 2)
-
-
-        self.__draw_turtle(turtle)
+    
 
     def render(self, turtle):
         """
@@ -91,7 +72,8 @@ class TurtleRenderer:
                 glDrawArrays(GL_LINE_STRIP, 0, len(current_vertices) // 2)
 
         # --- Affichage de la tortue (triangle) ---
-        self.__draw_turtle(turtle)
+        if turtle.show_turtle:
+            self.__draw_turtle(turtle)
 
     def __draw_turtle(self, turtle):
         """

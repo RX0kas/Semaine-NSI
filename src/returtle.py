@@ -24,6 +24,7 @@ class Turtle:
         self.pen_down = True  # par défaut, la tortue trace
         self.vertices = []  # segments déjà terminés (liste de sommets)
         self.current_path = []  # segment en cours de tracé (non encore validé)
+        self.show_turtle = True
         if self.pen_down:
             self.current_path = [self.x, self.y]
 

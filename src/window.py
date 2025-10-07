@@ -17,22 +17,22 @@ def on_resize(window, width, height):
     glViewport(0, 0, width, height)
 
     # Passer en mode projection (choix de la caméra/coordonnées)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-
-    # Calculer le ratio largeur/hauteur
-    aspect = width / height
-
-    # Définir une projection orthographique qui conserve les proportions
-    if aspect >= 1:
-        # Fenêtre plus large que haute → élargir les limites en X
-        glOrtho(-aspect, aspect, -1, 1, -1, 1)
-    else:
-        # Fenêtre plus haute que large → élargir les limites en Y
-        glOrtho(-1, 1, -1 / aspect, 1 / aspect, -1, 1)
-
-    # Revenir en mode "modèle-vue" (où l'on place les objets dans la scène)
-    glMatrixMode(GL_MODELVIEW)
+    #glMatrixMode(GL_PROJECTION)
+    #glLoadIdentity()
+#
+    ## Calculer le ratio largeur/hauteur
+    #aspect = width / height
+#
+    ## Définir une projection orthographique qui conserve les proportions
+    #if aspect >= 1:
+    #    # Fenêtre plus large que haute → élargir les limites en X
+    #    glOrtho(-aspect, aspect, -1, 1, -1, 1)
+    #else:
+    #    # Fenêtre plus haute que large → élargir les limites en Y
+    #    glOrtho(-1, 1, -1 / aspect, 1 / aspect, -1, 1)
+#
+    ## Revenir en mode "modèle-vue" (où l'on place les objets dans la scène)
+    #glMatrixMode(GL_MODELVIEW)
 
 
 class Window:
@@ -51,6 +51,12 @@ class Window:
         # Initialiser la bibliothèque GLFW
         if not glfw.init():
             raise Exception("GLFW n'a pas pu être initialisé")
+        
+        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
 
         # Créer la fenêtre
         self.__window = glfw.create_window(width, height, title, None, None)

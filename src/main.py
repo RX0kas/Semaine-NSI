@@ -41,6 +41,8 @@ while not fenetre.devrait_fermer():
     imguiRenderer.newFrame()
     glClear(GL_COLOR_BUFFER_BIT)
     turtleRenderer.render(t)
+    
+    imguiRenderer.show_debug_window(t)
 
     imguiRenderer.endFrame()
     fenetre.swapbuffer()
