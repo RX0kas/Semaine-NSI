@@ -21,6 +21,10 @@ class ImGuiRenderer:
     def newFrame(self):
         imgui.new_frame()
 
+        if glfw.get_time()-self.__lastPressed>self.__timer and glfw.get_key(self.__window,glfw.KEY_F3)==glfw.PRESS:
+            self.__showDebug = not self.__showDebug
+            self.__lastPressed = glfw.get_time()
+
     def endFrame(self):
         imgui.render()
         self.__GLFWimpl.render(imgui.get_draw_data())        
@@ -30,7 +34,7 @@ class ImGuiRenderer:
         glfw.make_context_current(backup_current_context)
         
 
-    def show_debug_window(self):
+    def show_debug_window(self,deltaTime,camera):
         if self.__showDebug:
             t = Turtle.get_turtle()
             imgui.begin("Debug")
@@ -42,4 +46,13 @@ class ImGuiRenderer:
                 imgui.text(f"Vertex num: {len(t.get_vertices())}")
                 _, t.show_turtle = imgui.checkbox("Dessine tortue",t.show_turtle)
                 _, t.turtle_size = imgui.slider_float("Taille", t.turtle_size, 0.001, 1)
+            if imgui.collapsing_header("Application"):
+                imgui.text("DeltaTime: {}".format(round(deltaTime,3)))
+                imgui.text("FPS: {}".format(round(1/deltaTime,3)))
+            if imgui.collapsing_header("Camera"):
+                pos = [camera.x,camera.y]
+                _, newPos = imgui.slider_float2("Position",pos,-5,5)
+                camera.x = newPos[0]
+                camera.y = newPos[1]
+                _, camera.zoom = imgui.slider_float("Zoom",camera.zoom,0.5,10)
             imgui.end()

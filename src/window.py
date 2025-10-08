@@ -68,6 +68,8 @@ class Window:
         # Rendre le contexte OpenGL actuel (lié à cette fenêtre)
         make_context_current(self.__window)
 
+        swap_interval(0) # Desactiver la limite de FPS
+
         # Associer la fonction de callback au redimensionnement
         set_window_size_callback(self.__window, on_resize)
 
@@ -101,3 +103,6 @@ class Window:
 
     def getWindow(self):
         return self.__window
+
+    def getTime(self) -> float:
+        return get_time()

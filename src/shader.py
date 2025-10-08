@@ -40,14 +40,14 @@ class Shader:
         glShaderSource(vertexShader, contentV)
         glCompileShader(vertexShader)
         if glGetShaderiv(vertexShader, GL_COMPILE_STATUS) != GL_TRUE:
-            raise ShaderError(ShaderType.VERTEX, f"{glGetShaderInfoLog(vertexShader, 512)}")
+            raise ShaderError(ShaderType.VERTEX, f"{glGetShaderInfoLog(vertexShader)}")
 
         # --- Compilation du fragment shader ---
         fragmentShader = glCreateShader(GL_FRAGMENT_SHADER)
         glShaderSource(fragmentShader, contentF)
         glCompileShader(fragmentShader)
         if glGetShaderiv(fragmentShader, GL_COMPILE_STATUS) != GL_TRUE:
-            raise ShaderError(ShaderType.FRAGMENT, f"{glGetShaderInfoLog(fragmentShader, 512)}")
+            raise ShaderError(ShaderType.FRAGMENT, f"{glGetShaderInfoLog(fragmentShader)}")
 
         # --- Liaison des shaders au programme ---
         glAttachShader(self.__program, vertexShader)
@@ -56,7 +56,7 @@ class Shader:
 
         # Vérifier le lien
         if glGetProgramiv(self.__program, GL_LINK_STATUS) != GL_TRUE:
-            raise ShaderError(ShaderType.LINKING, f"{glGetProgramInfoLog(self.__program, 512)}")
+            raise ShaderError(ShaderType.LINKING, f"{glGetProgramInfoLog(self.__program)}")
 
         # Nettoyage des objets shaders (plus nécessaires une fois liés au programme)
         glDeleteShader(vertexShader)

@@ -24,8 +24,8 @@ class TurtleRenderer:
         - Prépare l'attribut de position des sommets
         """
         # Compiler et lier les shaders
-        shader = Shader("turtle")
-        shader.use()
+        self.shader = Shader("turtle")
+        self.shader.use()
 
         # Générer et binder un VAO (stocke la configuration des attributs)
         self.vao = glGenVertexArrays(1)
@@ -35,7 +35,7 @@ class TurtleRenderer:
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
 
         # Associer l'attribut "a_position" du shader aux données du VBO
-        position = glGetAttribLocation(shader.getProgram(), "a_position")
+        position = glGetAttribLocation(self.shader.getProgram(), "a_position")
         glVertexAttribPointer(position, 2, GL_FLOAT, GL_FALSE, 0, None)
         glEnableVertexAttribArray(position)
 

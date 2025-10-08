@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from src.turtleRenderer import TurtleRenderer
 
 class Turtle:
     """
