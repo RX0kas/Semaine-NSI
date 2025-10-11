@@ -37,7 +37,7 @@ class Application:
             self.__turtleRenderer.render()
             self.__imguiRenderer.show_debug_window(deltaTime,self.__camera)
 
-            self.__imguiRenderer.endFrame()
+            self.__imguiRenderer.render()
             self.__fenetre.swapbuffer()
 
         self.__turtleRenderer.cleanup()

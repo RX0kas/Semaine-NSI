@@ -1,17 +1,11 @@
 import glfw
-from imgui_bundle import imgui, imgui_ctx
-from src.backend import glfw_backend
 from src.returtle import Turtle
+import src.backend_imgui as imgui
+import imgui_bundle
 
 class ImGuiRenderer:
     def __init__(self, window):
-        imgui.create_context()
-        
-        self.__GLFWimpl = glfw_backend.GlfwRenderer(window)
-        io = imgui.get_io()
-        
-        io.config_flags |= imgui.ConfigFlags_.docking_enable
-        io.config_flags |= imgui.ConfigFlags_.viewports_enable
+        imgui.init_imgui()
         
         self.__window = window
         self.__showDebug = True
@@ -25,14 +19,11 @@ class ImGuiRenderer:
             self.__showDebug = not self.__showDebug
             self.__lastPressed = glfw.get_time()
 
-    def endFrame(self):
+    def render(self):
         imgui.render()
-        self.__GLFWimpl.render(imgui.get_draw_data())        
-        backup_current_context = glfw.get_current_context()
-        imgui.update_platform_windows()
-        imgui.render_platform_windows_default()
-        glfw.make_context_current(backup_current_context)
-        
+
+    def shutdown(self):
+        imgui.shutdown()
 
     def show_debug_window(self,deltaTime,camera):
         if self.__showDebug:
