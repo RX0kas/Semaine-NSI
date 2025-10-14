@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__))) # dossier src
+
 import glfw
 from src.camera import Camera
 from src.window import Window

@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) # dossier src
+
 from src.application import Application
 from src.returtle import Turtle
 from ligne_koch import ligne_koch
