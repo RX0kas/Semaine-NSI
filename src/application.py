@@ -9,6 +9,7 @@ from src.turtleRenderer import TurtleRenderer
 from src.returtle import Turtle
 from src.imguiRenderer import ImGuiRenderer
 from OpenGL.GL import *
+import numpy as np
 
 class Application:
     def __init__(self):
@@ -37,6 +38,7 @@ class Application:
             # On aurait pu le calculer sur python mais il est trop lent
             self.__turtleRenderer.shader.setVec2f("center",self.__camera.x,self.__camera.y)
             self.__turtleRenderer.shader.setFloat("zoom",self.__camera.zoom)
+            self.__turtleRenderer.shader.setMat3f("viewmatrix",np.asarray(self.__camera.view_matrix,dtype=np.float32))
 
             self.__turtleRenderer.render()
             self.__imguiRenderer.show_debug_window(deltaTime,self.__camera)
