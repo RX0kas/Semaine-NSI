@@ -3,7 +3,7 @@ import os.path
 from OpenGL.GL import *
 from src.exception import ShaderType, ShaderError
 from ctypes import c_uint
-
+import numpy as np
 
 class Shader:
     """
@@ -94,7 +94,7 @@ class Shader:
         """
         Retourne l'identifiant OpenGL du programme de shaders.
         """
-        return self.__program
+        return self.__program # type: ignore
 
     # --- Méthodes utilitaires pour définir des uniformes GLSL ---
 
@@ -119,3 +119,6 @@ class Shader:
 
     def setVec3f(self, name: str, v0: float, v1: float, v2: float):
         glUniform3f(glGetUniformLocation(self.__program, name), v0, v1, v2)
+
+    def setMat3f(self,name:str,matrix):
+        glUniformMatrix3fv(glGetUniformLocation(self.__program, name),1,GL_FALSE,matrix)
