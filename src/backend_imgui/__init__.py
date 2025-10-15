@@ -1,20 +1,26 @@
-from importlib import import_module
 import os
-import sys
+from pathlib import Path
 
-# Localisation du module compilé (.pyd)
-_module_name = "imgui_py_backend"
-_module_path = os.path.dirname(__file__)
+# Get absolute paths
+_current_dir = Path(__file__).parent
+_bin_dir = _current_dir / "bin"
 
-# Ajoute le dossier build/Release au sys.path pour l'import
-if _module_path not in sys.path:
-    sys.path.insert(0, _module_path)
+# Add bin directory to DLL search path
+if hasattr(os, 'add_dll_directory'):
+    os.add_dll_directory(str(_bin_dir))
 
-# Import du module compilé
-_imgui = import_module(_module_name)
+# Also add to PATH for compatibility
+os.environ['PATH'] = str(_bin_dir) + os.pathsep + os.environ['PATH']
 
-# Réexporte tout le contenu vers le namespace courant
-globals().update({k: getattr(_imgui, k) for k in dir(_imgui) if not k.startswith("_")})
+# Now import the .pyd module normally
+from . import imgui_py_backend as _imgui
 
-# Nettoyage
-del _imgui, _module_name, _module_path, import_module, os, sys
+# Re-export all public functions/classes
+for name in dir(_imgui):
+    if not name.startswith('_'):
+        globals()[name] = getattr(_imgui, name)
+
+print("backend_imgui loaded successfully")
+
+# Cleanup
+del _current_dir, _bin_dir, _imgui

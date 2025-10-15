@@ -1,10 +1,10 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) # dossier src
+# pour lancer ce fichier:
+# Il faut être dans le dossier parent à src
+# python -m src.fractales.flocon_koch
 
-from src.application import Application
-from src.returtle import Turtle
-from ligne_koch import ligne_koch
+from ..application import Application # on peut utiliser ces deux methodes
+from src.returtle import Turtle       # pour importer des modules
+from src.fractales.ligne_koch import ligne_koch
 
 def flocon_koch(profondeur : int):
     t = Turtle.get_turtle()

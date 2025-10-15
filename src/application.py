@@ -46,6 +46,7 @@ class Application:
             self.__imguiRenderer.render()
             self.__fenetre.swapbuffer()
 
+        self.__imguiRenderer.shutdown()
         self.__turtleRenderer.cleanup()
         self.__fenetre.supprimer()
 
