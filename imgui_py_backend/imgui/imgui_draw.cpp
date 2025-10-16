@@ -1,4 +1,4 @@
-// dear imgui, v1.92.4 WIP
+// dear imgui, v1.92.4
 // (drawing and font code)
 
 /*
@@ -14,7 +14,7 @@ Index of this file:
 // [SECTION] Helpers ShadeVertsXXX functions
 // [SECTION] ImFontConfig
 // [SECTION] ImFontAtlas, ImFontAtlasBuilder
-// [SECTION] ImFontAtlas: backends for stb_truetype
+// [SECTION] ImFontAtlas: backend for stb_truetype
 // [SECTION] ImFontAtlas: glyph ranges helpers
 // [SECTION] ImFontGlyphRangesBuilder
 // [SECTION] ImFont
@@ -242,6 +242,7 @@ void ImGui::StyleColorsDark(ImGuiStyle* dst)
     colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     colors[ImGuiCol_TreeLines]              = colors[ImGuiCol_Border];
     colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_UnsavedMarker]          = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_NavCursor]              = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
@@ -309,6 +310,7 @@ void ImGui::StyleColorsClassic(ImGuiStyle* dst)
     colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
     colors[ImGuiCol_TreeLines]              = colors[ImGuiCol_Border];
     colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_UnsavedMarker]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImGuiCol_NavCursor]              = colors[ImGuiCol_HeaderHovered];
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
@@ -377,6 +379,7 @@ void ImGui::StyleColorsLight(ImGuiStyle* dst)
     colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     colors[ImGuiCol_TreeLines]              = colors[ImGuiCol_Border];
     colors[ImGuiCol_DragDropTarget]         = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+    colors[ImGuiCol_UnsavedMarker]          = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImGuiCol_NavCursor]              = colors[ImGuiCol_HeaderHovered];
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
@@ -2282,10 +2285,10 @@ void ImGui::AddDrawListToDrawDataEx(ImDrawData* draw_data, ImVector<ImDrawList*>
     // - First, make sure you are coarse clipping yourself and not trying to draw many things outside visible bounds.
     //   Be mindful that the lower-level ImDrawList API doesn't filter vertices. Use the Metrics/Debugger window to inspect draw list contents.
     // - If you want large meshes with more than 64K vertices, you can either:
-    //   (A) Handle the ImDrawCmd::VtxOffset value in your renderer backends, and set 'io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset'.
+    //   (A) Handle the ImDrawCmd::VtxOffset value in your renderer backend, and set 'io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset'.
     //       Most example backends already support this from 1.71. Pre-1.71 backends won't.
     //       Some graphics API such as GL ES 1/2 don't have a way to offset the starting vertex so it is not supported for them.
-    //   (B) Or handle 32-bit indices in your renderer backends, and uncomment '#define ImDrawIdx unsigned int' line in imconfig.h.
+    //   (B) Or handle 32-bit indices in your renderer backend, and uncomment '#define ImDrawIdx unsigned int' line in imconfig.h.
     //       Most example backends already support this. For example, the OpenGL example code detect index size at compile-time:
     //         glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
     //       Your own engine or render API may use different parameters or function calls to specify index sizes.
@@ -2640,7 +2643,7 @@ ImFontAtlas::ImFontAtlas()
     TexMaxWidth = 8192;
     TexMaxHeight = 8192;
     TexRef._TexID = ImTextureID_Invalid;
-    RendererHasTextures = false; // Assumed false by default, as apps can call e.g Atlas::Build() after backends init and before ImGui can update.
+    RendererHasTextures = false; // Assumed false by default, as apps can call e.g Atlas::Build() after backend init and before ImGui can update.
     TexNextUniqueID = 1;
     FontNextUniqueID = 1;
     Builder = NULL;
@@ -2722,7 +2725,7 @@ static void ImFontAtlasBuildUpdateRendererHasTexturesFromContext(ImFontAtlas* at
 {
     // [LEGACY] Copy back the ImGuiBackendFlags_RendererHasTextures flag from ImGui context.
     // - This is the 1% exceptional case where that dependency if useful, to bypass an issue where otherwise at the
-    //   time of an early call to Build(), it would be impossible for us to tell if the backends supports texture update.
+    //   time of an early call to Build(), it would be impossible for us to tell if the backend supports texture update.
     // - Without this hack, we would have quite a pitfall as many legacy codebases have an early call to Build().
     //   Whereas conversely, the portion of people using ImDrawList without ImGui is expected to be pathologically rare.
     for (ImDrawListSharedData* shared_data : atlas->DrawListSharedDatas)
@@ -2742,16 +2745,16 @@ void ImFontAtlasUpdateNewFrame(ImFontAtlas* atlas, int frame_count, bool rendere
     IM_ASSERT(atlas->Builder == NULL || atlas->Builder->FrameCount < frame_count); // Protection against being called twice.
     atlas->RendererHasTextures = renderer_has_textures;
 
-    // Check that font atlas was built or backends support texture reload in which case we can build now
+    // Check that font atlas was built or backend support texture reload in which case we can build now
     if (atlas->RendererHasTextures)
     {
         atlas->TexIsBuilt = true;
         if (atlas->Builder == NULL) // This will only happen if fonts were not already loaded.
             ImFontAtlasBuildMain(atlas);
     }
-    // Legacy backends
+    // Legacy backend
     if (!atlas->RendererHasTextures)
-        IM_ASSERT_USER_ERROR(atlas->TexIsBuilt, "Backend does not support ImGuiBackendFlags_RendererHasTextures, and font atlas is not built! Update backends OR make sure you called ImGui_ImplXXXX_NewFrame() function for renderer backends, which should call io.Fonts->GetTexDataAsRGBA32() / GetTexDataAsAlpha8().");
+        IM_ASSERT_USER_ERROR(atlas->TexIsBuilt, "Backend does not support ImGuiBackendFlags_RendererHasTextures, and font atlas is not built! Update backend OR make sure you called ImGui_ImplXXXX_NewFrame() function for renderer backend, which should call io.Fonts->GetTexDataAsRGBA32() / GetTexDataAsAlpha8().");
     if (atlas->TexIsBuilt && atlas->Builder->PreloadedAllGlyphsRanges)
         IM_ASSERT_USER_ERROR(atlas->RendererHasTextures == false, "Called ImFontAtlas::Build() before ImGuiBackendFlags_RendererHasTextures got set! With new backends: you don't need to call Build().");
 
@@ -2797,15 +2800,15 @@ void ImFontAtlasUpdateNewFrame(ImFontAtlas* atlas, int frame_count, bool rendere
             IM_ASSERT(tex->TexID == ImTextureID_Invalid && tex->BackendUserData == NULL && "Backend set texture's TexID/BackendUserData but did not update Status to OK.");
 
         // Request destroy
-        // - Keep bool to true in order to differentiate a planned destroy vs a destroy decided by the backends.
-        // - We don't destroy pixels right away, as backends may have an in-flight copy from RAM.
+        // - Keep bool to true in order to differentiate a planned destroy vs a destroy decided by the backend.
+        // - We don't destroy pixels right away, as backend may have an in-flight copy from RAM.
         if (tex->WantDestroyNextFrame && tex->Status != ImTextureStatus_Destroyed && tex->Status != ImTextureStatus_WantDestroy)
         {
             IM_ASSERT(tex->Status == ImTextureStatus_OK || tex->Status == ImTextureStatus_WantCreate || tex->Status == ImTextureStatus_WantUpdates);
             tex->Status = ImTextureStatus_WantDestroy;
         }
 
-        // If a texture has never reached the backends, they don't need to know about it.
+        // If a texture has never reached the backend, they don't need to know about it.
         // (note: backends between 1.92.0 and 1.92.4 could set an already destroyed texture to ImTextureStatus_WantDestroy
         //  when invalidating graphics objects twice, which would previously remove it from the list and crash.)
         if (tex->Status == ImTextureStatus_WantDestroy && tex->TexID == ImTextureID_Invalid && tex->BackendUserData == NULL)
@@ -2818,11 +2821,11 @@ void ImFontAtlasUpdateNewFrame(ImFontAtlas* atlas, int frame_count, bool rendere
             if (tex->WantDestroyNextFrame)
                 remove_from_list = true; // Destroy was scheduled by us
             else
-                tex->Status = ImTextureStatus_WantCreate; // Destroy was done was backends: recreate it (e.g. freed resources mid-run)
+                tex->Status = ImTextureStatus_WantCreate; // Destroy was done was backend: recreate it (e.g. freed resources mid-run)
         }
 
-        // The backends may need defer destroying by a few frames, to handle texture used by previous in-flight rendering.
-        // We allow the texture staying in _WantDestroy state and increment a counter which the backends can use to take its decision.
+        // The backend may need defer destroying by a few frames, to handle texture used by previous in-flight rendering.
+        // We allow the texture staying in _WantDestroy state and increment a counter which the backend can use to take its decision.
         if (tex->Status == ImTextureStatus_WantDestroy)
             tex->UnusedFrames++;
 
@@ -2949,7 +2952,7 @@ void ImFontAtlasTextureBlockCopy(ImTextureData* src_tex, int src_x, int src_y, I
         memcpy(dst_tex->GetPixelsAt(dst_x, dst_y + y), src_tex->GetPixelsAt(src_x, src_y + y), w * dst_tex->BytesPerPixel);
 }
 
-// Queue texture block update for renderer backends
+// Queue texture block update for renderer backend
 void ImFontAtlasTextureBlockQueueUpload(ImFontAtlas* atlas, ImTextureData* tex, int x, int y, int w, int h)
 {
     IM_ASSERT(tex->Status != ImTextureStatus_WantDestroy && tex->Status != ImTextureStatus_Destroyed);
@@ -3675,7 +3678,7 @@ static ImFontGlyph* ImFontAtlasBuildSetupFontBakedEllipsis(ImFontAtlas* atlas, I
     glyph = ImFontAtlasBakedAddFontGlyph(atlas, baked, NULL, glyph);
     dot_glyph = NULL; // Invalidated
 
-    // Copy to texture, post-process and queue update for backends
+    // Copy to texture, post-process and queue update for backend
     // FIXME-NEWATLAS-V2: Dot glyph is already post-processed as this point, so this would damage it.
     dot_r = ImFontAtlasPackGetRect(atlas, dot_r_id);
     ImTextureData* tex = atlas->TexData;
@@ -3786,9 +3789,9 @@ ImFontBaked* ImFontAtlasBakedAdd(ImFontAtlas* atlas, ImFont* font, float font_si
     baked->ContainerFont = font;
     baked->LastUsedFrame = atlas->Builder->FrameCount;
 
-    // Initialize backends data
+    // Initialize backend data
     size_t loader_data_size = 0;
-    for (ImFontConfig* src : font->Sources) // Cannot easily be cached as we allow changing backends
+    for (ImFontConfig* src : font->Sources) // Cannot easily be cached as we allow changing backend
     {
         const ImFontLoader* loader = src->FontLoader ? src->FontLoader : atlas->FontLoader;
         loader_data_size += loader->FontBakedSrcLoaderDataSize;
@@ -3959,7 +3962,7 @@ ImTextureData* ImFontAtlasTextureAdd(ImFontAtlas* atlas, int w, int h)
     // FIXME: Cannot reuse texture because old UV may have been used already (unless we remap UV).
     /*if (old_tex != NULL && old_tex->Status == ImTextureStatus_WantCreate)
     {
-        // Reuse texture not yet used by backends.
+        // Reuse texture not yet used by backend.
         IM_ASSERT(old_tex->TexID == ImTextureID_Invalid && old_tex->BackendUserData == NULL);
         old_tex->DestroyPixels();
         old_tex->Updates.clear();
@@ -4081,7 +4084,7 @@ void ImFontAtlasTextureGrow(ImFontAtlas* atlas, int old_tex_w, int old_tex_h)
     if (old_tex_h == -1)
         old_tex_h = atlas->TexData->Height;
 
-    // FIXME-NEWATLAS-V2: What to do when reaching limits exposed by backends?
+    // FIXME-NEWATLAS-V2: What to do when reaching limits exposed by backend?
     // FIXME-NEWATLAS-V2: Does ImFontAtlasFlags_NoPowerOfTwoHeight makes sense now? Allow 'lock' and 'compact' operations?
     IM_ASSERT(ImIsPowerOfTwo(old_tex_w) && ImIsPowerOfTwo(old_tex_h));
     IM_ASSERT(ImIsPowerOfTwo(atlas->TexMinWidth) && ImIsPowerOfTwo(atlas->TexMaxWidth) && ImIsPowerOfTwo(atlas->TexMinHeight) && ImIsPowerOfTwo(atlas->TexMaxHeight));
@@ -4447,7 +4450,7 @@ static ImFontGlyph* ImFontBaked_BuildLoadGlyph(ImFontBaked* baked, ImWchar codep
         if (ImFontGlyph* glyph = ImFontAtlasBuildSetupFontBakedEllipsis(atlas, baked))
             return glyph;
 
-    // Call backends
+    // Call backend
     char* loader_user_data_p = (char*)baked->FontLoaderDatas;
     int src_n = 0;
     for (ImFontConfig* src : font->Sources)
@@ -4547,7 +4550,7 @@ void ImFontAtlasDebugLogTextureRequests(ImFontAtlas* atlas)
 #endif
 
 //-------------------------------------------------------------------------
-// [SECTION] ImFontAtlas: backends for stb_truetype
+// [SECTION] ImFontAtlas: backend for stb_truetype
 //-------------------------------------------------------------------------
 // (imstb_truetype.h in included near the top of this file, when IMGUI_ENABLE_STB_TRUETYPE is set)
 //-------------------------------------------------------------------------
@@ -5193,7 +5196,7 @@ void ImFontAtlasBakedAddFontGlyphAdvancedX(ImFontAtlas* atlas, ImFontBaked* bake
     baked->IndexAdvanceX[codepoint] = advance_x;
 }
 
-// Copy to texture, post-process and queue update for backends
+// Copy to texture, post-process and queue update for backend
 void ImFontAtlasBakedSetFontGlyphBitmap(ImFontAtlas* atlas, ImFontBaked* baked, ImFontConfig* src, ImFontGlyph* glyph, ImTextureRect* r, const unsigned char* src_pixels, ImTextureFormat src_fmt, int src_pitch)
 {
     ImTextureData* tex = atlas->TexData;
@@ -5340,7 +5343,7 @@ ImFontBaked* ImFontAtlasBakedGetOrAdd(ImFontAtlas* atlas, ImFont* font, float fo
             return baked;
         if (atlas->Locked)
         {
-            IM_ASSERT(!atlas->Locked && "Cannot use dynamic font size with a locked ImFontAtlas!"); // Locked because rendering backends does not support ImGuiBackendFlags_RendererHasTextures!
+            IM_ASSERT(!atlas->Locked && "Cannot use dynamic font size with a locked ImFontAtlas!"); // Locked because rendering backend does not support ImGuiBackendFlags_RendererHasTextures!
             return NULL;
         }
     }

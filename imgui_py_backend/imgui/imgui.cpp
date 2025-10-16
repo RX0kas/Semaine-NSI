@@ -1,4 +1,4 @@
-// dear imgui, v1.92.4 WIP
+// dear imgui, v1.92.4
 // (main code and documentation)
 
 // Help:
@@ -175,9 +175,9 @@ CODE
    - Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
    - Particularly useful to use Dear ImGui on a console system (e.g. PlayStation, Switch, Xbox) without a mouse!
    - Download controller mapping PNG/PSD at http://dearimgui.com/controls_sheets
-   - Backend support: backends needs to:
+   - Backend support: backend needs to:
       - Set 'io.BackendFlags |= ImGuiBackendFlags_HasGamepad' + call io.AddKeyEvent/AddKeyAnalogEvent() with ImGuiKey_Gamepad_XXX keys.
-      - For analog values (0.0f to 1.0f), backends is responsible to handling a dead-zone and rescaling inputs accordingly.
+      - For analog values (0.0f to 1.0f), backend is responsible to handling a dead-zone and rescaling inputs accordingly.
         Backend code will probably need to transform your raw inputs (such as e.g. remapping your 0.2..0.9 raw input range to 0.0..1.0 imgui range, etc.).
    - If you need to share inputs between your game and the Dear ImGui interface, the easiest approach is to go all-or-nothing,
      with a buttons combo to toggle the target. Please reach out if you think the game vs navigation input sharing could be improved.
@@ -190,7 +190,7 @@ CODE
    - On a TV/console system where readability may be lower or mouse inputs may be awkward, you may want to set the io.ConfigNavMoveSetMousePos flag.
      Enabling io.ConfigNavMoveSetMousePos + ImGuiBackendFlags_HasSetMousePos instructs Dear ImGui to move your mouse cursor along with navigation movements.
      When enabled, the NewFrame() function may alter 'io.MousePos' and set 'io.WantSetMousePos' to notify you that it wants the mouse cursor to be moved.
-     When that happens your backends NEEDS to move the OS or underlying mouse cursor on the next frame. Some of the backends in examples/ do that.
+     When that happens your backend NEEDS to move the OS or underlying mouse cursor on the next frame. Some of the backends in examples/ do that.
      (If you set the NavEnableSetMousePos flag but don't honor 'io.WantSetMousePos' properly, Dear ImGui will misbehave as it will see your mouse moving back & forth!)
      (In a setup when you may not have easy control over the mouse cursor, e.g. uSynergy.c doesn't expose moving remote mouse cursor, you may want
      to set a boolean to ignore your other external mouse positions until the external source is moved again.)
@@ -262,7 +262,7 @@ CODE
  - See https://github.com/ocornut/imgui/wiki/Getting-Started.
  - Run and study the examples and demo in imgui_demo.cpp to get acquainted with the library.
  - In the majority of cases you should be able to use unmodified backends files available in the backends/ folder.
- - Add the Dear ImGui source files + selected backends source files to your projects or using your preferred build system.
+ - Add the Dear ImGui source files + selected backend source files to your projects or using your preferred build system.
    It is recommended you build and statically link the .cpp files as part of your project and NOT as a shared library (DLL).
  - You can later customize the imconfig.h file to tweak some compile-time behavior, such as integrating Dear ImGui types with your own maths types.
  - When using Dear ImGui, your programming IDE is your friend: follow the declaration of variables, functions and types to find comments about them.
@@ -332,7 +332,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  -> see https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md
  -> the Renderer Backends in impl_impl_XXX.cpp files contain many implementations of a ImGui_ImplXXXX_UpdateTexture() function.
 
- Basic application/backends skeleton:
+ Basic application/backend skeleton:
 
      // Application init: create a Dear ImGui context, setup some options, load fonts
      ImGui::CreateContext();
@@ -400,6 +400,10 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                           - likewise io.MousePos and GetMousePos() will use OS coordinates.
                             If you query mouse positions to interact with non-imgui coordinates you will need to offset them, e.g. subtract GetWindowViewport()->Pos.
 
+ - 2025/10/14 (1.92.4) - TreeNode, Selectable, Clipper: commented out legacy names which were obsoleted in 1.89.7 (July 2023) and 1.89.9 (Sept 2023);
+                         - ImGuiTreeNodeFlags_AllowItemOverlap       --> ImGuiTreeNodeFlags_AllowOverlap
+                         - ImGuiSelectableFlags_AllowItemOverlap     --> ImGuiSelectableFlags_AllowOverlap
+                         - ImGuiListClipper::IncludeRangeByIndices() --> ImGuiListClipper::IncludeItemsByIndex()
  - 2025/09/22 (1.92.4) - Viewports: renamed io.ConfigViewportPlatformFocusSetsImGuiFocus to io.ConfigViewportsPlatformFocusSetsImGuiFocus. Was a typo in the first place. (#6299, #6462)
  - 2025/08/08 (1.92.2) - Backends: SDL_GPU3: Changed ImTextureID type from SDL_GPUTextureSamplerBinding* to SDL_GPUTexture*, which is more natural and easier for user to manage. If you need to change the current sampler, you can access the ImGui_ImplSDLGPU3_RenderState struct. (#8866, #8163, #7998, #7988)
  - 2025/07/31 (1.92.2) - Tabs: Renamed ImGuiTabBarFlags_FittingPolicyResizeDown to ImGuiTabBarFlags_FittingPolicyShrink. Kept inline redirection enum (will obsolete).
@@ -421,8 +425,8 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                        - Hard to read? Refer to 'docs/Changelog.txt' for a less compact and more complete version of this!
                        - Fonts: **IMPORTANT**: if your app was solving the OSX/iOS Retina screen specific logical vs display scale problem by setting io.DisplayFramebufferScale (e.g. to 2.0f) + setting io.FontGlobalScale (e.g. to 1.0f/2.0f) + loading fonts at scaled sizes (e.g. size X * 2.0f):
                          This WILL NOT map correctly to the new system! Because font will rasterize as requested size.
-                         - With a legacy backends (< 1.92): Instead of setting io.FontGlobalScale = 1.0f/N -> set ImFontCfg::RasterizerDensity = N. This already worked before, but is now pretty much required.
-                         - With a new backends (1.92+): This should be all automatic. FramebufferScale is automatically used to set current font RasterizerDensity. FramebufferScale is a per-viewport property provided by backends through the Platform_GetWindowFramebufferScale() handler in 'docking' branch.
+                         - With a legacy backend (< 1.92): Instead of setting io.FontGlobalScale = 1.0f/N -> set ImFontCfg::RasterizerDensity = N. This already worked before, but is now pretty much required.
+                         - With a new backend (1.92+): This should be all automatic. FramebufferScale is automatically used to set current font RasterizerDensity. FramebufferScale is a per-viewport property provided by backend through the Platform_GetWindowFramebufferScale() handler in 'docking' branch.
                        - Fonts: **IMPORTANT** on Font Sizing: Before 1.92, fonts were of a single size. They can now be dynamically sized.
                          - PushFont() API now has a REQUIRED size parameter.
                          - Before 1.92: PushFont() always used font "default" size specified in AddFont() call. It is equivalent to calling PushFont(font, font->LegacySize).
@@ -434,7 +438,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                            Because the user doesn't need to provide glyph ranges any more, it is possible that a glyph that you expected to fetch from a secondary/merged icon font may be erroneously fetched from the primary font.
                          - When searching for a glyph in multiple merged fonts: we now search for the FIRST font source which contains the desired glyph. This is technically a different behavior than before!
                          - e.g. If you are merging fonts you may have glyphs that you expected to load from Font Source 2 which exists in Font Source 1.
-                           After the update and when using a new backends, those glyphs may now loaded from Font Source 1!
+                           After the update and when using a new backend, those glyphs may now loaded from Font Source 1!
                          - We added `ImFontConfig::GlyphExcludeRanges[]` to specify ranges to exclude from a given font source:
                              // Add Font Source 1 but ignore ICON_MIN_FA..ICON_MAX_FA range
                              static ImWchar exclude_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
@@ -453,7 +457,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                        - Fonts: Renamed/moved 'io.FontGlobalScale' to 'style.FontScaleMain'.
                        - Textures: all API functions taking a 'ImTextureID' parameter are now taking a 'ImTextureRef'. Affected functions are: ImGui::Image(), ImGui::ImageWithBg(), ImGui::ImageButton(), ImDrawList::AddImage(), ImDrawList::AddImageQuad(), ImDrawList::AddImageRounded().
                        - Fonts: obsoleted ImFontAtlas::GetTexDataAsRGBA32(), GetTexDataAsAlpha8(), Build(), SetTexID(), IsBuilt() functions. The new protocol for backends to handle textures doesn't need them. Kept redirection functions (will obsolete).
-                       - Fonts: ImFontConfig::OversampleH/OversampleV default to automatic (== 0) since v1.91.8. It is quite important you keep it automatic until we decide if we want to provide a way to express finer policy, otherwise you will likely waste texture space when using large glyphs. Note that the imgui_freetype backends doesn't use and does not need oversampling.
+                       - Fonts: ImFontConfig::OversampleH/OversampleV default to automatic (== 0) since v1.91.8. It is quite important you keep it automatic until we decide if we want to provide a way to express finer policy, otherwise you will likely waste texture space when using large glyphs. Note that the imgui_freetype backend doesn't use and does not need oversampling.
                        - Fonts: specifying glyph ranges is now unnecessary. The value of ImFontConfig::GlyphRanges[] is only useful for legacy backends. All GetGlyphRangesXXXX() functions are now marked obsolete: GetGlyphRangesDefault(), GetGlyphRangesGreek(), GetGlyphRangesKorean(), GetGlyphRangesJapanese(), GetGlyphRangesChineseSimplifiedCommon(), GetGlyphRangesChineseFull(), GetGlyphRangesCyrillic(), GetGlyphRangesThai(), GetGlyphRangesVietnamese().
                        - Fonts: removed ImFontAtlas::TexDesiredWidth to enforce a texture width. (#327)
                        - Fonts: if you create and manage ImFontAtlas instances yourself (instead of relying on ImGuiContext to create one), you'll need to call ImFontAtlasUpdateNewFrame() yourself. An assert will trigger if you don't.
@@ -525,7 +529,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                             - for more reference:
                               - read 1.87 and 1.88 part of this section or read Changelog for 1.87 and 1.88.
                               - read https://github.com/ocornut/imgui/issues/4921
-                            - if you have trouble updating a very old codebase using legacy backends-specific key codes: consider updating to 1.91.4 first, then #define IMGUI_DISABLE_OBSOLETE_KEYIO, then update to latest.
+                            - if you have trouble updating a very old codebase using legacy backend-specific key codes: consider updating to 1.91.4 first, then #define IMGUI_DISABLE_OBSOLETE_KEYIO, then update to latest.
                        - obsoleted ImGuiKey_COUNT (it is unusually error-prone/misleading since valid keys don't start at 0). probably use ImGuiKey_NamedKey_BEGIN/ImGuiKey_NamedKey_END?
                        - fonts: removed const qualifiers from most font functions in prevision for upcoming font improvements.
  - 2024/10/18 (1.91.4) - renamed ImGuiCol_NavHighlight to ImGuiCol_NavCursor (for consistency with newly exposed and reworked features). Kept inline redirection enum (will obsolete).
@@ -610,7 +614,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  - 2024/05/16 (1.90.7) - inputs: on macOS X, Cmd and Ctrl keys are now automatically swapped by io.AddKeyEvent() as this naturally align with how macOS X uses those keys.
                            - it shouldn't really affect you unless you had custom shortcut swapping in place for macOS X apps.
                            - removed ImGuiMod_Shortcut which was previously dynamically remapping to Ctrl or Cmd/Super. It is now unnecessary to specific cross-platform idiomatic shortcuts. (#2343, #4084, #5923, #456)
- - 2024/05/14 (1.90.7) - backends: SDL_Renderer2 and SDL_Renderer3 backends now take a SDL_Renderer* in their RenderDrawData() functions.
+ - 2024/05/14 (1.90.7) - backends: SDL_Renderer2 and SDL_Renderer3 backend now take a SDL_Renderer* in their RenderDrawData() functions.
  - 2024/04/18 (1.90.6) - TreeNode: Fixed a layout inconsistency when using an empty/hidden label followed by a SameLine() call. (#7505, #282)
                            - old: TreeNode("##Hidden"); SameLine(); Text("Hello");     // <-- This was actually incorrect! BUT appeared to look ok with the default style where ItemSpacing.x == FramePadding.x * 2 (it didn't look aligned otherwise).
                            - new: TreeNode("##Hidden"); SameLine(0, 0); Text("Hello"); // <-- This is correct for all styles values.
@@ -618,7 +622,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                          You'll need to change the SameLine() call to SameLine(0,0) to remove this extraneous spacing. This seemed like the more sensible fix that's not making things less consistent.
                          (Note: when using this idiom you are likely to also use ImGuiTreeNodeFlags_SpanAvailWidth).
  - 2024/03/18 (1.90.5) - merged the radius_x/radius_y parameters in ImDrawList::AddEllipse(), AddEllipseFilled() and PathEllipticalArcTo() into a single ImVec2 parameter. Exceptionally, because those functions were added in 1.90, we are not adding inline redirection functions. The transition is easy and should affect few users. (#2743, #7417)
- - 2024/03/08 (1.90.5) - inputs: more formally obsoleted GetKeyIndex() when IMGUI_DISABLE_OBSOLETE_FUNCTIONS is set. It has been unnecessary and a no-op since 1.87 (it returns the same value as passed when used with a 1.87+ backends using io.AddKeyEvent() function). (#4921)
+ - 2024/03/08 (1.90.5) - inputs: more formally obsoleted GetKeyIndex() when IMGUI_DISABLE_OBSOLETE_FUNCTIONS is set. It has been unnecessary and a no-op since 1.87 (it returns the same value as passed when used with a 1.87+ backend using io.AddKeyEvent() function). (#4921)
                            - IsKeyPressed(GetKeyIndex(ImGuiKey_XXX)) -> use IsKeyPressed(ImGuiKey_XXX)
  - 2024/01/15 (1.90.2) - commented out obsolete ImGuiIO::ImeWindowHandle marked obsolete in 1.87, favor of writing to 'void* ImGuiViewport::PlatformHandleRaw'.
  - 2023/12/19 (1.90.1) - commented out obsolete ImGuiKey_KeyPadEnter redirection to ImGuiKey_KeypadEnter.
@@ -686,10 +690,10 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                          the ImGuiModFlags_XXX have been exposed in imgui.h but not really used by any public api only by third-party extensions.
                          exceptionally commenting out the older ImGuiKeyModFlags_XXX names ahead of obsolescence schedule to reduce confusion and because they were not meant to be used anyway.
  - 2022/09/20 (1.89)   - ImGuiKey is now a typed enum, allowing ImGuiKey_XXX symbols to be named in debuggers.
-                         this will require uses of legacy backends-dependent indices to be casted, e.g.
+                         this will require uses of legacy backend-dependent indices to be casted, e.g.
                             - with imgui_impl_glfw:  IsKeyPressed(GLFW_KEY_A) -> IsKeyPressed((ImGuiKey)GLFW_KEY_A);
                             - with imgui_impl_win32: IsKeyPressed('A')        -> IsKeyPressed((ImGuiKey)'A')
-                            - etc. However if you are upgrading code you might well use the better, backends-agnostic IsKeyPressed(ImGuiKey_A) now!
+                            - etc. However if you are upgrading code you might well use the better, backend-agnostic IsKeyPressed(ImGuiKey_A) now!
  - 2022/09/12 (1.89) - removed the bizarre legacy default argument for 'TreePush(const void* ptr = NULL)', always pass a pointer value explicitly. NULL/nullptr is ok but require cast, e.g. TreePush((void*)nullptr);
  - 2022/09/05 (1.89) - commented out redirecting functions/enums names that were marked obsolete in 1.77 and 1.78 (June 2020):
                          - DragScalar(), DragScalarN(), DragFloat(), DragFloat2(), DragFloat3(), DragFloat4(): For old signatures ending with (..., const char* format, float power = 1.0f) -> use (..., format ImGuiSliderFlags_Logarithmic) if power != 1.0f.
@@ -721,24 +725,24 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                         - Custom backends writing to io.NavInputs[]     -> will build and convert gamepad inputs, unless IMGUI_DISABLE_OBSOLETE_KEYIO is defined. Need fixing!
                         - TL;DR: Backends should call io.AddKeyEvent()/io.AddKeyAnalogEvent() with ImGuiKey_GamepadXXX values instead of filling io.NavInput[].
  - 2022/06/15 (1.88) - renamed IMGUI_DISABLE_METRICS_WINDOW to IMGUI_DISABLE_DEBUG_TOOLS for correctness. kept support for old define (will obsolete).
- - 2022/05/03 (1.88) - backends: osx: removed ImGui_ImplOSX_HandleEvent() from backends API in favor of backends automatically handling event capture. All ImGui_ImplOSX_HandleEvent() calls should be removed as they are now unnecessary.
+ - 2022/05/03 (1.88) - backends: osx: removed ImGui_ImplOSX_HandleEvent() from backend API in favor of backend automatically handling event capture. All ImGui_ImplOSX_HandleEvent() calls should be removed as they are now unnecessary.
  - 2022/04/05 (1.88) - inputs: renamed ImGuiKeyModFlags to ImGuiModFlags. Kept inline redirection enums (will obsolete). This was never used in public API functions but technically present in imgui.h and ImGuiIO.
  - 2022/01/20 (1.87) - inputs: reworded gamepad IO.
-                        - Backend writing to io.NavInputs[]            -> backends should call io.AddKeyEvent()/io.AddKeyAnalogEvent() with ImGuiKey_GamepadXXX values.
+                        - Backend writing to io.NavInputs[]            -> backend should call io.AddKeyEvent()/io.AddKeyAnalogEvent() with ImGuiKey_GamepadXXX values.
  - 2022/01/19 (1.87) - sliders, drags: removed support for legacy arithmetic operators (+,+-,*,/) when inputting text. This doesn't break any api/code but a feature that used to be accessible by end-users (which seemingly no one used).
  - 2022/01/17 (1.87) - inputs: reworked mouse IO.
-                        - Backend writing to io.MousePos               -> backends should call io.AddMousePosEvent()
-                        - Backend writing to io.MouseDown[]            -> backends should call io.AddMouseButtonEvent()
-                        - Backend writing to io.MouseWheel             -> backends should call io.AddMouseWheelEvent()
-                        - Backend writing to io.MouseHoveredViewport   -> backends should call io.AddMouseViewportEvent() [Docking branch w/ multi-viewports only]
+                        - Backend writing to io.MousePos               -> backend should call io.AddMousePosEvent()
+                        - Backend writing to io.MouseDown[]            -> backend should call io.AddMouseButtonEvent()
+                        - Backend writing to io.MouseWheel             -> backend should call io.AddMouseWheelEvent()
+                        - Backend writing to io.MouseHoveredViewport   -> backend should call io.AddMouseViewportEvent() [Docking branch w/ multi-viewports only]
                        note: for all calls to IO new functions, the Dear ImGui context should be bound/current.
                        read https://github.com/ocornut/imgui/issues/4921 for details.
  - 2022/01/10 (1.87) - inputs: reworked keyboard IO. Removed io.KeyMap[], io.KeysDown[] in favor of calling io.AddKeyEvent(), ImGui::IsKeyDown(). Removed GetKeyIndex(), now unnecessary. All IsKeyXXX() functions now take ImGuiKey values. All features are still functional until IMGUI_DISABLE_OBSOLETE_KEYIO is defined. Read Changelog and Release Notes for details.
                         - IsKeyPressed(MY_NATIVE_KEY_XXX)              -> use IsKeyPressed(ImGuiKey_XXX)
                         - IsKeyPressed(GetKeyIndex(ImGuiKey_XXX))      -> use IsKeyPressed(ImGuiKey_XXX)
-                        - Backend writing to io.KeyMap[],io.KeysDown[] -> backends should call io.AddKeyEvent() (+ call io.SetKeyEventNativeData() if you want legacy user code to still function with legacy key codes).
-                        - Backend writing to io.KeyCtrl, io.KeyShift.. -> backends should call io.AddKeyEvent() with ImGuiMod_XXX values. *IF YOU PULLED CODE BETWEEN 2021/01/10 and 2021/01/27: We used to have a io.AddKeyModsEvent() function which was now replaced by io.AddKeyEvent() with ImGuiMod_XXX values.*
-                     - one case won't work with backward compatibility: if your custom backends used ImGuiKey as mock native indices (e.g. "io.KeyMap[ImGuiKey_A] = ImGuiKey_A") because those values are now larger than the legacy KeyDown[] array. Will assert.
+                        - Backend writing to io.KeyMap[],io.KeysDown[] -> backend should call io.AddKeyEvent() (+ call io.SetKeyEventNativeData() if you want legacy user code to still function with legacy key codes).
+                        - Backend writing to io.KeyCtrl, io.KeyShift.. -> backend should call io.AddKeyEvent() with ImGuiMod_XXX values. *IF YOU PULLED CODE BETWEEN 2021/01/10 and 2021/01/27: We used to have a io.AddKeyModsEvent() function which was now replaced by io.AddKeyEvent() with ImGuiMod_XXX values.*
+                     - one case won't work with backward compatibility: if your custom backend used ImGuiKey as mock native indices (e.g. "io.KeyMap[ImGuiKey_A] = ImGuiKey_A") because those values are now larger than the legacy KeyDown[] array. Will assert.
                      - inputs: added ImGuiKey_ModCtrl/ImGuiKey_ModShift/ImGuiKey_ModAlt/ImGuiKey_ModSuper values to submit keyboard modifiers using io.AddKeyEvent(), instead of writing directly to io.KeyCtrl, io.KeyShift, io.KeyAlt, io.KeySuper.
  - 2022/01/05 (1.87) - inputs: renamed ImGuiKey_KeyPadEnter to ImGuiKey_KeypadEnter to align with new symbols. Kept redirection enum.
  - 2022/01/05 (1.87) - removed io.ImeSetInputScreenPosFn() in favor of more flexible io.SetPlatformImeDataFn(). Removed 'void* io.ImeWindowHandle' in favor of writing to 'void* ImGuiViewport::PlatformHandleRaw'.
@@ -748,7 +752,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                         - ImGui::TreeAdvanceToLabelPos()      -> use ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetTreeNodeToLabelSpacing());
                         - ImFontAtlas::CustomRect             -> use ImFontAtlasCustomRect
                         - ImGuiColorEditFlags_RGB/HSV/HEX     -> use ImGuiColorEditFlags_DisplayRGB/HSV/Hex
- - 2021/12/20 (1.86) - backends: removed obsolete Marmalade backends (imgui_impl_marmalade.cpp) + example. Find last supported version at https://github.com/ocornut/imgui/wiki/Bindings
+ - 2021/12/20 (1.86) - backends: removed obsolete Marmalade backend (imgui_impl_marmalade.cpp) + example. Find last supported version at https://github.com/ocornut/imgui/wiki/Bindings
  - 2021/11/04 (1.86) - removed CalcListClipping() function. Prefer using ImGuiListClipper which can return non-contiguous ranges. Please open an issue if you think you really need this function.
  - 2021/08/23 (1.85) - removed GetWindowContentRegionWidth() function. keep inline redirection helper. can use 'GetWindowContentRegionMax().x - GetWindowContentRegionMin().x' instead for generally 'GetContentRegionAvail().x' is more useful.
  - 2021/07/26 (1.84) - commented out redirecting functions/enums names that were marked obsolete in 1.67 and 1.69 (March 2019):
@@ -756,7 +760,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
                         - ImFont::GlyphRangesBuilder  -> use ImFontGlyphRangesBuilder
  - 2021/05/19 (1.83) - backends: obsoleted direct access to ImDrawCmd::TextureId in favor of calling ImDrawCmd::GetTexID().
                         - if you are using official backends from the source tree: you have nothing to do.
-                        - if you have copied old backends code or using your own: change access to draw_cmd->TextureId to draw_cmd->GetTexID().
+                        - if you have copied old backend code or using your own: change access to draw_cmd->TextureId to draw_cmd->GetTexID().
  - 2021/03/12 (1.82) - upgraded ImDrawList::AddRect(), AddRectFilled(), PathRect() to use ImDrawFlags instead of ImDrawCornersFlags.
                         - ImDrawCornerFlags_TopLeft  -> use ImDrawFlags_RoundCornersTopLeft
                         - ImDrawCornerFlags_BotRight -> use ImDrawFlags_RoundCornersBottomRight
@@ -793,7 +797,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  - 2020/11/03 (1.80) - renamed io.ConfigWindowsMemoryCompactTimer to io.ConfigMemoryCompactTimer as the feature will apply to other data structures
  - 2020/10/14 (1.80) - backends: moved all backends files (imgui_impl_XXXX.cpp, imgui_impl_XXXX.h) from examples/ to backends/.
  - 2020/10/12 (1.80) - removed redirecting functions/enums that were marked obsolete in 1.60 (April 2018):
-                        - io.RenderDrawListsFn pointer        -> use ImGui::GetDrawData() value and call the render function of your backends
+                        - io.RenderDrawListsFn pointer        -> use ImGui::GetDrawData() value and call the render function of your backend
                         - ImGui::IsAnyWindowFocused()         -> use ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow)
                         - ImGui::IsAnyWindowHovered()         -> use ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)
                         - ImGuiStyleVar_Count_                -> use ImGuiStyleVar_COUNT
@@ -896,7 +900,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  - 2018/04/28 (1.61) - obsoleted InputFloat() functions taking an optional "int decimal_precision" in favor of an equivalent and more flexible "const char* format",
                        consistent with other functions. Kept redirection functions (will obsolete).
  - 2018/04/09 (1.61) - IM_DELETE() helper function added in 1.60 doesn't clear the input _pointer_ reference, more consistent with expectation and allows passing r-value.
- - 2018/03/20 (1.60) - renamed io.WantMoveMouse to io.WantSetMousePos for consistency and ease of understanding (was added in 1.52, _not_ used by core and only honored by some backends ahead of merging the Nav branch).
+ - 2018/03/20 (1.60) - renamed io.WantMoveMouse to io.WantSetMousePos for consistency and ease of understanding (was added in 1.52, _not_ used by core and only honored by some backend ahead of merging the Nav branch).
  - 2018/03/12 (1.60) - removed ImGuiCol_CloseButton, ImGuiCol_CloseButtonActive, ImGuiCol_CloseButtonHovered as the closing cross uses regular button colors now.
  - 2018/03/08 (1.60) - changed ImFont::DisplayOffset.y to default to 0 instead of +1. Fixed rounding of Ascent/Descent to match TrueType renderer. If you were adding or subtracting to ImFont::DisplayOffset check if your fonts are correctly aligned vertically.
  - 2018/03/03 (1.60) - renamed ImGuiStyleVar_Count_ to ImGuiStyleVar_COUNT and ImGuiMouseCursor_Count_ to ImGuiMouseCursor_COUNT for consistency with other public enums.
@@ -940,7 +944,7 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
  - 2017/10/11 (1.52) - renamed AlignFirstTextHeightToWidgets() to AlignTextToFramePadding(). Kept inline redirection function (will obsolete).
  - 2017/09/26 (1.52) - renamed ImFont::Glyph to ImFontGlyph. Kept redirection typedef (will obsolete).
  - 2017/09/25 (1.52) - removed SetNextWindowPosCenter() because SetNextWindowPos() now has the optional pivot information to do the same and more. Kept redirection function (will obsolete).
- - 2017/08/25 (1.52) - io.MousePos needs to be set to ImVec2(-FLT_MAX,-FLT_MAX) when mouse is unavailable/missing. Previously ImVec2(-1,-1) was enough but we now accept negative mouse coordinates. In your backends if you need to support unavailable mouse, make sure to replace "io.MousePos = ImVec2(-1,-1)" with "io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX)".
+ - 2017/08/25 (1.52) - io.MousePos needs to be set to ImVec2(-FLT_MAX,-FLT_MAX) when mouse is unavailable/missing. Previously ImVec2(-1,-1) was enough but we now accept negative mouse coordinates. In your backend if you need to support unavailable mouse, make sure to replace "io.MousePos = ImVec2(-1,-1)" with "io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX)".
  - 2017/08/22 (1.51) - renamed IsItemHoveredRect() to IsItemRectHovered(). Kept inline redirection function (will obsolete). -> (1.52) use IsItemHovered(ImGuiHoveredFlags_RectOnly)!
                      - renamed IsMouseHoveringAnyWindow() to IsAnyWindowHovered() for consistency. Kept inline redirection function (will obsolete).
                      - renamed IsMouseHoveringWindow() to IsWindowRectHovered() for consistency. Kept inline redirection function (will obsolete).
@@ -1473,7 +1477,7 @@ ImGuiStyle::ImGuiStyle()
     DockingSeparatorSize        = 2.0f;             // Thickness of resizing border between docked windows
     MouseCursorScale            = 1.0f;             // Scale software rendered mouse cursor (when io.MouseDrawCursor is enabled). May be removed later.
     AntiAliasedLines            = true;             // Enable anti-aliased lines/borders. Disable if you are really tight on CPU/GPU.
-    AntiAliasedLinesUseTex      = true;             // Enable anti-aliased lines/borders using textures where possible. Require backends to render with bilinear filtering (NOT point/nearest filtering).
+    AntiAliasedLinesUseTex      = true;             // Enable anti-aliased lines/borders using textures where possible. Require backend to render with bilinear filtering (NOT point/nearest filtering).
     AntiAliasedFill             = true;             // Enable anti-aliased filled shapes (rounded rectangles, circles, etc.).
     CurveTessellationTol        = 1.25f;            // Tessellation tolerance when using PathBezierCurveTo() without a specific number of segments. Decrease for highly tessellated curves (higher quality, more polygons), increase to reduce quality.
     CircleTessellationMaxError  = 0.30f;            // Maximum error (in pixels) allowed when using AddCircle()/AddCircleFilled() or drawing rounded corner rectangles with no explicit segment count specified. Decrease for higher quality but more geometry.
@@ -1820,7 +1824,7 @@ void ImGuiIO::AddKeyEvent(ImGuiKey key, bool down)
 
 // [Optional] Call after AddKeyEvent().
 // Specify native keycode, scancode + Specify index for legacy <1.87 IsKeyXXX() functions with native indices.
-// If you are writing a backends in 2022 or don't use IsKeyXXX() with native values that are not ImGuiKey values, you can avoid calling this.
+// If you are writing a backend in 2022 or don't use IsKeyXXX() with native values that are not ImGuiKey values, you can avoid calling this.
 void ImGuiIO::SetKeyEventNativeData(ImGuiKey key, int native_keycode, int native_scancode, int native_legacy_index)
 {
     if (key == ImGuiKey_None)
@@ -3767,6 +3771,7 @@ const char* ImGui::GetStyleColorName(ImGuiCol idx)
     case ImGuiCol_TextSelectedBg: return "TextSelectedBg";
     case ImGuiCol_TreeLines: return "TreeLines";
     case ImGuiCol_DragDropTarget: return "DragDropTarget";
+    case ImGuiCol_UnsavedMarker: return "UnsavedMarker";
     case ImGuiCol_NavCursor: return "NavCursor";
     case ImGuiCol_NavWindowingHighlight: return "NavWindowingHighlight";
     case ImGuiCol_NavWindowingDimBg: return "NavWindowingDimBg";
@@ -4416,8 +4421,8 @@ void ImGui::Initialize()
 void ImGui::Shutdown()
 {
     ImGuiContext& g = *GImGui;
-    IM_ASSERT_USER_ERROR(g.IO.BackendPlatformUserData == NULL, "Forgot to shutdown Platform backends?");
-    IM_ASSERT_USER_ERROR(g.IO.BackendRendererUserData == NULL, "Forgot to shutdown Renderer backends?");
+    IM_ASSERT_USER_ERROR(g.IO.BackendPlatformUserData == NULL, "Forgot to shutdown Platform backend?");
+    IM_ASSERT_USER_ERROR(g.IO.BackendRendererUserData == NULL, "Forgot to shutdown Renderer backend?");
     for (ImGuiViewportP* viewport : g.Viewports)
     {
         IM_UNUSED(viewport);
@@ -4747,7 +4752,8 @@ void ImGui::MarkItemEdited(ImGuiID id)
 
     // We accept a MarkItemEdited() on drag and drop targets (see https://github.com/ocornut/imgui/issues/1875#issuecomment-978243343)
     // We accept 'ActiveIdPreviousFrame == id' for InputText() returning an edit after it has been taken ActiveId away (#4714)
-    IM_ASSERT(g.DragDropActive || g.ActiveId == id || g.ActiveId == 0 || g.ActiveIdPreviousFrame == id || (g.CurrentMultiSelect != NULL && g.BoxSelectState.IsActive));
+    // FIXME: This assert is getting a bit meaningless over time. It helped detect some unusual use cases but eventually it is becoming an unnecessary restriction.
+    IM_ASSERT(g.DragDropActive || g.ActiveId == id || g.ActiveId == 0 || g.ActiveIdPreviousFrame == id || g.NavJustMovedToId || (g.CurrentMultiSelect != NULL && g.BoxSelectState.IsActive));
 
     //IM_ASSERT(g.CurrentWindow->DC.LastItemId == id);
     g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_Edited;
@@ -5157,7 +5163,7 @@ ImGuiPlatformIO& ImGui::GetPlatformIO(ImGuiContext* ctx)
     return ctx->PlatformIO;
 }
 
-// Pass this to your backends rendering function! Valid after Render() and until the next call to NewFrame()
+// Pass this to your backend rendering function! Valid after Render() and until the next call to NewFrame()
 ImDrawData* ImGui::GetDrawData()
 {
     ImGuiContext& g = *GImGui;
@@ -6181,7 +6187,7 @@ void ImGui::EndFrame()
 
 // Prepare the data for rendering so you can call GetDrawData()
 // (As with anything within the ImGui:: namespace this doesn't touch your GPU or graphics API at all:
-// it is the role of the ImGui_ImplXXXX_RenderDrawData() function provided by the renderer backends)
+// it is the role of the ImGui_ImplXXXX_RenderDrawData() function provided by the renderer backend)
 void ImGui::Render()
 {
     ImGuiContext& g = *GImGui;
@@ -7551,7 +7557,7 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
         marker_pos.y = (layout_r.Min.y + layout_r.Max.y) * 0.5f;
         if (marker_pos.x > layout_r.Min.x)
         {
-            RenderBullet(window->DrawList, marker_pos, GetColorU32(ImGuiCol_Text));
+            RenderBullet(window->DrawList, marker_pos, GetColorU32(ImGuiCol_UnsavedMarker));
             clip_r.Max.x = ImMin(clip_r.Max.x, marker_pos.x - (int)(marker_size_x * 0.5f));
         }
     }
@@ -7572,7 +7578,7 @@ void ImGui::UpdateWindowParentAndRootLinks(ImGuiWindow* window, ImGuiWindowFlags
     }
     if (parent_window && (flags & ImGuiWindowFlags_Popup))
         window->RootWindowPopupTree = parent_window->RootWindowPopupTree;
-    if (parent_window && !(flags & ImGuiWindowFlags_Modal) && (flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Popup))) // FIXME: simply use _NoTitleBar ?
+    if (parent_window && !(flags & ImGuiWindowFlags_Modal) && (flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Popup | ImGuiWindowFlags_Tooltip))) // FIXME: simply use _NoTitleBar ?
         window->RootWindowForTitleBarHighlight = parent_window->RootWindowForTitleBarHighlight;
     while (window->RootWindowForNav->ChildFlags & ImGuiChildFlags_NavFlattened)
     {
@@ -7717,7 +7723,7 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
 
     // Parent window is latched only on the first call to Begin() of the frame, so further append-calls can be done from a different window stack
     ImGuiWindow* parent_window_in_stack = (window->DockIsActive && window->DockNode->HostWindow) ? window->DockNode->HostWindow : g.CurrentWindowStack.empty() ? NULL : g.CurrentWindowStack.back().Window;
-    ImGuiWindow* parent_window = first_begin_of_the_frame ? ((flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Popup)) ? parent_window_in_stack : NULL) : window->ParentWindow;
+    ImGuiWindow* parent_window = first_begin_of_the_frame ? ((flags & (ImGuiWindowFlags_ChildWindow | ImGuiWindowFlags_Popup | ImGuiWindowFlags_Tooltip)) ? parent_window_in_stack : NULL) : window->ParentWindow;
     IM_ASSERT(parent_window != NULL || !(flags & ImGuiWindowFlags_ChildWindow));
 
     // We allow window memory to be compacted so recreate the base stack when needed.
@@ -9389,7 +9395,7 @@ static void ImGui::UpdateTexturesEndFrame()
         for (ImTextureData* tex : atlas->TexList)
         {
             // We provide this information so backends can decide whether to destroy textures.
-            // This means in practice that if N imgui contexts are created with a shared atlas, we assume all of them have a backends initialized.
+            // This means in practice that if N imgui contexts are created with a shared atlas, we assume all of them have a backend initialized.
             tex->RefCount = (unsigned short)atlas->RefCount;
             g.PlatformIO.Textures.push_back(tex);
         }
@@ -9864,7 +9870,7 @@ ImGuiKeyData* ImGui::GetKeyData(ImGuiContext* ctx, ImGuiKey key)
     if (key & ImGuiMod_Mask_)
         key = ConvertSingleModFlagToKey(key);
 
-    IM_ASSERT(IsNamedKey(key) && "Support for user key indices was dropped in favor of ImGuiKey. Please update backends & user code.");
+    IM_ASSERT(IsNamedKey(key) && "Support for user key indices was dropped in favor of ImGuiKey. Please update backend & user code.");
     return &g.IO.KeysData[key - ImGuiKey_NamedKey_BEGIN];
 }
 
@@ -9899,7 +9905,7 @@ const char* ImGui::GetKeyName(ImGuiKey key)
 {
     if (key == ImGuiKey_None)
         return "None";
-    IM_ASSERT(IsNamedKeyOrMod(key) && "Support for user key indices was dropped in favor of ImGuiKey. Please update backends and user code.");
+    IM_ASSERT(IsNamedKeyOrMod(key) && "Support for user key indices was dropped in favor of ImGuiKey. Please update backend and user code.");
     if (key & ImGuiMod_Mask_)
         key = ConvertSingleModFlagToKey(key);
     if (!IsNamedKey(key))
@@ -9997,7 +10003,7 @@ static void ImGui::UpdateKeyRoutingTable(ImGuiKeyRoutingTable* rt)
             routing_entry->RoutingCurrScore = routing_entry->RoutingNextScore;
             routing_entry->RoutingCurr = routing_entry->RoutingNext; // Update entry
             routing_entry->RoutingNext = ImGuiKeyOwner_NoOwner;
-            routing_entry->RoutingNextScore = 255;
+            routing_entry->RoutingNextScore = 0;
             if (routing_entry->RoutingCurr == ImGuiKeyOwner_NoOwner)
                 continue;
             rt->EntriesNext.push_back(*routing_entry); // Write alive ones into new buffer
@@ -10066,23 +10072,24 @@ ImGuiKeyRoutingData* ImGui::GetShortcutRoutingData(ImGuiKeyChord key_chord)
     return routing_data;
 }
 
-// Current score encoding (lower is highest priority):
-//  -   0: ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteOverActive
-//  -   1: ImGuiInputFlags_ActiveItem or ImGuiInputFlags_RouteFocused (if item active)
-//  -   2: ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteOverFocused
-//  -  3+: ImGuiInputFlags_RouteFocused (if window in focus-stack)
-//  - 254: ImGuiInputFlags_RouteGlobal
-//  - 255: never route
+// Current score encoding
+//  -        0: Never route
+//  -        1: ImGuiInputFlags_RouteGlobal    (lower priority)
+//  - 100..199: ImGuiInputFlags_RouteFocused   (if window in focus-stack)
+//         200: ImGuiInputFlags_RouteGlobal  | ImGuiInputFlags_RouteOverFocused
+//         300: ImGuiInputFlags_RouteActive or ImGuiInputFlags_RouteFocused (if item active)
+//         400: ImGuiInputFlags_RouteGlobal  | ImGuiInputFlags_RouteOverActive
+//  - 500..599: ImGuiInputFlags_RouteFocused | ImGuiInputFlags_RouteOverActive (if window in focus-stack) (higher priority)
 // 'flags' should include an explicit routing policy
 static int CalcRoutingScore(ImGuiID focus_scope_id, ImGuiID owner_id, ImGuiInputFlags flags)
 {
     ImGuiContext& g = *GImGui;
     if (flags & ImGuiInputFlags_RouteFocused)
     {
-        // ActiveID gets top priority
+        // ActiveID gets high priority
         // (we don't check g.ActiveIdUsingAllKeys here. Routing is applied but if input ownership is tested later it may discard it)
         if (owner_id != 0 && g.ActiveId == owner_id)
-            return 1;
+            return 300;
 
         // Score based on distance to focused window (lower is better)
         // Assuming both windows are submitting a routing request,
@@ -10092,25 +10099,32 @@ static int CalcRoutingScore(ImGuiID focus_scope_id, ImGuiID owner_id, ImGuiInput
         // - When Window/ChildB is focused -> Window scores 4 (best), Window/ChildB doesn't have a score.
         // This essentially follow the window->ParentWindowForFocusRoute chain.
         if (focus_scope_id == 0)
-            return 255;
+            return 0;
         for (int index_in_focus_path = 0; index_in_focus_path < g.NavFocusRoute.Size; index_in_focus_path++)
             if (g.NavFocusRoute.Data[index_in_focus_path].ID == focus_scope_id)
-                return 3 + index_in_focus_path;
-        return 255;
+            {
+                if (flags & ImGuiInputFlags_RouteOverActive) // && g.ActiveId != 0 && g.ActiveId != owner_id)
+                    return 599 - index_in_focus_path;
+                else
+                    return 199 - index_in_focus_path;
+            }
+        return 0;
     }
     else if (flags & ImGuiInputFlags_RouteActive)
     {
         if (owner_id != 0 && g.ActiveId == owner_id)
-            return 1;
-        return 255;
+            return 300;
+        return 0;
     }
     else if (flags & ImGuiInputFlags_RouteGlobal)
     {
         if (flags & ImGuiInputFlags_RouteOverActive)
-            return 0;
+            return 400;
+        if (owner_id != 0 && g.ActiveId == owner_id)
+            return 300;
         if (flags & ImGuiInputFlags_RouteOverFocused)
-            return 2;
-        return 254;
+            return 200;
+        return 1;
     }
     IM_ASSERT(0);
     return 0;
@@ -10150,8 +10164,10 @@ bool ImGui::SetShortcutRouting(ImGuiKeyChord key_chord, ImGuiInputFlags flags, I
     else
         IM_ASSERT(ImIsPowerOfTwo(flags & ImGuiInputFlags_RouteTypeMask_)); // Check that only 1 routing flag is used
     IM_ASSERT(owner_id != ImGuiKeyOwner_Any && owner_id != ImGuiKeyOwner_NoOwner);
-    if (flags & (ImGuiInputFlags_RouteOverFocused | ImGuiInputFlags_RouteOverActive | ImGuiInputFlags_RouteUnlessBgFocused))
+    if (flags & (ImGuiInputFlags_RouteOverFocused | ImGuiInputFlags_RouteUnlessBgFocused))
         IM_ASSERT(flags & ImGuiInputFlags_RouteGlobal);
+    if (flags & ImGuiInputFlags_RouteOverActive)
+        IM_ASSERT(flags & (ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_RouteFocused));
 
     // Add ImGuiMod_XXXX when a corresponding ImGuiKey_LeftXXX/ImGuiKey_RightXXX is specified.
     key_chord = FixupKeyChord(key_chord);
@@ -10206,17 +10222,17 @@ bool ImGui::SetShortcutRouting(ImGuiKeyChord key_chord, ImGuiInputFlags flags, I
 
     const int score = CalcRoutingScore(focus_scope_id, owner_id, flags);
     IMGUI_DEBUG_LOG_INPUTROUTING("SetShortcutRouting(%s, flags=%04X, owner_id=0x%08X) -> score %d\n", GetKeyChordName(key_chord), flags, owner_id, score);
-    if (score == 255)
+    if (score == 0)
         return false;
 
     // Submit routing for NEXT frame (assuming score is sufficient)
-    // FIXME: Could expose a way to use a "serve last" policy for same score resolution (using <= instead of <).
+    // FIXME: Could expose a way to use a "serve last" policy for same score resolution (using >= instead of >).
     ImGuiKeyRoutingData* routing_data = GetShortcutRoutingData(key_chord);
-    //const bool set_route = (flags & ImGuiInputFlags_ServeLast) ? (score <= routing_data->RoutingNextScore) : (score < routing_data->RoutingNextScore);
-    if (score < routing_data->RoutingNextScore)
+    //const bool set_route = (flags & ImGuiInputFlags_ServeLast) ? (score >= routing_data->RoutingNextScore) : (score > routing_data->RoutingNextScore);
+    if (score > routing_data->RoutingNextScore)
     {
         routing_data->RoutingNext = owner_id;
-        routing_data->RoutingNextScore = (ImU8)score;
+        routing_data->RoutingNextScore = (ImU16)score;
     }
 
     // Return routing state for CURRENT frame
@@ -10446,7 +10462,7 @@ ImVec2 ImGui::GetMousePos()
 }
 
 // This is called TeleportMousePos() and not SetMousePos() to emphasis that setting MousePosPrev will effectively clear mouse delta as well.
-// It is expected you only call this if (io.BackendFlags & ImGuiBackendFlags_HasSetMousePos) is set and supported by backends.
+// It is expected you only call this if (io.BackendFlags & ImGuiBackendFlags_HasSetMousePos) is set and supported by backend.
 void ImGui::TeleportMousePos(const ImVec2& pos)
 {
     ImGuiContext& g = *GImGui;
@@ -10476,7 +10492,7 @@ bool ImGui::IsMousePosValid(const ImVec2* mouse_pos)
     return p.x >= MOUSE_INVALID && p.y >= MOUSE_INVALID;
 }
 
-// [WILL OBSOLETE] This was designed for backends, but prefer having backends maintain a mask of held mouse buttons, because upcoming input queue system will make this invalid.
+// [WILL OBSOLETE] This was designed for backends, but prefer having backend maintain a mask of held mouse buttons, because upcoming input queue system will make this invalid.
 bool ImGui::IsAnyMouseDown()
 {
     ImGuiContext& g = *GImGui;
@@ -10511,7 +10527,7 @@ void ImGui::ResetMouseDragDelta(ImGuiMouseButton button)
 }
 
 // Get desired mouse cursor shape.
-// Important: this is meant to be used by a platform backends, it is reset in ImGui::NewFrame(),
+// Important: this is meant to be used by a platform backend, it is reset in ImGui::NewFrame(),
 // updated during the frame, and locked in EndFrame()/Render().
 // If you use software rendering by setting io.MouseDrawCursor then Dear ImGui will render those for you
 ImGuiMouseCursor ImGui::GetMouseCursor()
@@ -10521,8 +10537,8 @@ ImGuiMouseCursor ImGui::GetMouseCursor()
 }
 
 // We intentionally accept values of ImGuiMouseCursor that are outside our bounds, in case users needs to hack-in a custom cursor value.
-// Custom cursors may be handled by custom backends. If you are using a standard backends and want to hack in a custom cursor, you may
-// handle it before the backends _NewFrame() call and temporarily set ImGuiConfigFlags_NoMouseCursorChange during the backends _NewFrame() call.
+// Custom cursors may be handled by custom backends. If you are using a standard backend and want to hack in a custom cursor, you may
+// handle it before the backend _NewFrame() call and temporarily set ImGuiConfigFlags_NoMouseCursorChange during the backend _NewFrame() call.
 void ImGui::SetMouseCursor(ImGuiMouseCursor cursor_type)
 {
     ImGuiContext& g = *GImGui;
@@ -11019,7 +11035,7 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
     // Clear buttons state when focus is lost
     // - this is useful so e.g. releasing Alt after focus loss on Alt-Tab doesn't trigger the Alt menu toggle.
     // - we clear in EndFrame() and not now in order allow application/user code polling this flag
-    //   (e.g. custom backends may want to clear additional data, custom widgets may want to react with a "canceling" event).
+    //   (e.g. custom backend may want to clear additional data, custom widgets may want to react with a "canceling" event).
     if (g.IO.AppFocusLost)
     {
         g.IO.ClearInputKeys();
@@ -11319,7 +11335,7 @@ static void ImGui::ErrorCheckNewFrameSanityChecks()
     if (true) IM_ASSERT(1); else IM_ASSERT(0);
 
     // Emscripten backends are often imprecise in their submission of DeltaTime. (#6114, #3644)
-    // Ideally the Emscripten app/backends should aim to fix or smooth this value and avoid feeding zero, but we tolerate it.
+    // Ideally the Emscripten app/backend should aim to fix or smooth this value and avoid feeding zero, but we tolerate it.
 #ifdef __EMSCRIPTEN__
     if (g.IO.DeltaTime <= 0.0f && g.FrameCount > 0)
         g.IO.DeltaTime = 0.00001f;
@@ -14169,7 +14185,7 @@ static ImVec2 ImGui::NavCalcPreferredRefPos()
         if (window != NULL)
             if (ImGuiViewport* viewport = window->Viewport)
                 pos = ImClamp(pos, viewport->Pos, viewport->Pos + viewport->Size);
-        return ImTrunc(pos); // ImTrunc() is important because non-integer mouse position application in backends might be lossy and result in undesirable non-zero delta.
+        return ImTrunc(pos); // ImTrunc() is important because non-integer mouse position application in backend might be lossy and result in undesirable non-zero delta.
     }
 }
 
@@ -14941,7 +14957,7 @@ static void ImGui::NavUpdateWindowingApplyFocus(ImGuiWindow* apply_focus_window)
         FocusWindow(apply_focus_window, ImGuiFocusRequestFlags_RestoreFocusedChild);
         IM_ASSERT(g.NavWindow != NULL);
         apply_focus_window = g.NavWindow;
-        if (apply_focus_window->NavLastIds[0] == 0)
+        if (apply_focus_window->NavLastIds[0] == 0) // FIXME: This is the equivalent of the 'if (g.NavId == 0) { NavInitWindow() }' in DockNodeUpdateTabBar().
             NavInitWindow(apply_focus_window, false);
 
         // If the window has ONLY a menu layer (no main layer), select it directly
@@ -16487,9 +16503,9 @@ void ImGui::ScaleWindowsInViewport(ImGuiViewportP* viewport, float scale)
     }
 }
 
-// If the backends doesn't set MouseLastHoveredViewport or doesn't honor ImGuiViewportFlags_NoInputs, we do a search ourselves.
+// If the backend doesn't set MouseLastHoveredViewport or doesn't honor ImGuiViewportFlags_NoInputs, we do a search ourselves.
 // A) It won't take account of the possibility that non-imgui windows may be in-between our dragged window and our target window.
-// B) It requires Platform_GetWindowFocus to be implemented by backends.
+// B) It requires Platform_GetWindowFocus to be implemented by backend.
 ImGuiViewportP* ImGui::FindHoveredViewportFromPlatformWindowStack(const ImVec2& mouse_platform_pos)
 {
     ImGuiContext& g = *GImGui;
@@ -16526,8 +16542,8 @@ static void ImGui::UpdateViewportsNewFrame()
                     viewport->Flags &= ~ImGuiViewportFlags_IsMinimized;
             }
 
-            // Update our implicit z-order knowledge of platform windows, which is used when the backends cannot provide io.MouseHoveredViewport.
-            // When setting Platform_GetWindowFocus, it is expected that the platform backends can handle calls without crashing if it doesn't have data stored.
+            // Update our implicit z-order knowledge of platform windows, which is used when the backend cannot provide io.MouseHoveredViewport.
+            // When setting Platform_GetWindowFocus, it is expected that the platform backend can handle calls without crashing if it doesn't have data stored.
             if (g.PlatformIO.Platform_GetWindowFocus && platform_funcs_available)
             {
                 bool is_focused = g.PlatformIO.Platform_GetWindowFocus(viewport);
@@ -16576,7 +16592,7 @@ static void ImGui::UpdateViewportsNewFrame()
     }
 
     // Create/update main viewport with current platform position.
-    // FIXME-VIEWPORT: Size is driven by backends/user code for backward-compatibility but we should aim to make this more consistent.
+    // FIXME-VIEWPORT: Size is driven by backend/user code for backward-compatibility but we should aim to make this more consistent.
     ImGuiViewportP* main_viewport = g.Viewports[0];
     IM_ASSERT(main_viewport->ID == IMGUI_VIEWPORT_DEFAULT_ID);
     IM_ASSERT(main_viewport->Window == NULL);
@@ -16627,7 +16643,7 @@ static void ImGui::UpdateViewportsNewFrame()
         // Update/copy monitor info
         UpdateViewportPlatformMonitor(viewport);
 
-        // Lock down space taken by menu bars and status bars + query initial insets from backends
+        // Lock down space taken by menu bars and status bars + query initial insets from backend
         // Setup initial value for functions like BeginMainMenuBar(), DockSpaceOverViewport() etc.
         viewport->WorkInsetMin = viewport->BuildWorkInsetMin;
         viewport->WorkInsetMax = viewport->BuildWorkInsetMax;
@@ -16716,9 +16732,9 @@ static void ImGui::UpdateViewportsNewFrame()
     }
     else
     {
-        // If the backends doesn't know how to honor ImGuiViewportFlags_NoInputs, we do a search ourselves. Note that this search:
+        // If the backend doesn't know how to honor ImGuiViewportFlags_NoInputs, we do a search ourselves. Note that this search:
         // A) won't take account of the possibility that non-imgui windows may be in-between our dragged window and our target window.
-        // B) won't take account of how the backends apply parent<>child relationship to secondary viewports, which affects their Z order.
+        // B) won't take account of how the backend apply parent<>child relationship to secondary viewports, which affects their Z order.
         // C) uses LastFrameAsRefViewport as a flawed replacement for the last time a window was focused (we could/should fix that by introducing Focus functions in PlatformIO)
         viewport_hovered = FindHoveredViewportFromPlatformWindowStack(g.IO.MousePos);
     }
@@ -16871,7 +16887,7 @@ static void ImGui::WindowSelectViewport(ImGuiWindow* window)
     ImGuiWindowFlags flags = window->Flags;
     window->ViewportAllowPlatformMonitorExtend = -1;
 
-    // Restore main viewport if multi-viewport is not supported by the backends
+    // Restore main viewport if multi-viewport is not supported by the backend
     ImGuiViewportP* main_viewport = (ImGuiViewportP*)(void*)GetMainViewport();
     if (!(g.ConfigFlagsCurrFrame & ImGuiConfigFlags_ViewportsEnable))
     {
@@ -17073,7 +17089,7 @@ void ImGui::WindowSyncOwnedViewport(ImGuiWindow* window, ImGuiWindow* parent_win
     if (window->WindowClass.ViewportFlagsOverrideClear)
         viewport_flags &= ~window->WindowClass.ViewportFlagsOverrideClear;
 
-    // We can also tell the backends that clearing the platform window won't be necessary,
+    // We can also tell the backend that clearing the platform window won't be necessary,
     // as our window background is filling the viewport and we have disabled BgAlpha.
     // FIXME: Work on support for per-viewport transparency (#2766)
     if (!(window_flags & ImGuiWindowFlags_NoBackground))
@@ -17180,7 +17196,7 @@ void ImGui::UpdatePlatformWindows()
             g.PlatformIO.Platform_SetWindowAlpha(viewport, viewport->Alpha);
         viewport->LastAlpha = viewport->Alpha;
 
-        // Optional, general purpose call to allow the backends to perform general book-keeping even if things haven't changed.
+        // Optional, general purpose call to allow the backend to perform general book-keeping even if things haven't changed.
         if (g.PlatformIO.Platform_UpdateWindow)
             g.PlatformIO.Platform_UpdateWindow(viewport);
 
@@ -17314,7 +17330,7 @@ void ImGui::DestroyPlatformWindow(ImGuiViewportP* viewport)
         IM_ASSERT(viewport->RendererUserData == NULL && viewport->PlatformUserData == NULL);
 
         // Don't clear PlatformWindowCreated for the main viewport, as we initially set that up to true in Initialize()
-        // The righter way may be to leave it to the backends to set this flag all-together, and made the flag public.
+        // The righter way may be to leave it to the backend to set this flag all-together, and made the flag public.
         if (viewport->ID != IMGUI_VIEWPORT_DEFAULT_ID)
             viewport->PlatformWindowCreated = false;
     }
@@ -17328,11 +17344,11 @@ void ImGui::DestroyPlatformWindow(ImGuiViewportP* viewport)
 
 void ImGui::DestroyPlatformWindows()
 {
-    // We call the destroy window on every viewport (including the main viewport, index 0) to give a chance to the backends
+    // We call the destroy window on every viewport (including the main viewport, index 0) to give a chance to the backend
     // to clear any data they may have stored in e.g. PlatformUserData, RendererUserData.
-    // It is convenient for the platform backends code to store something in the main viewport, in order for e.g. the mouse handling
+    // It is convenient for the platform backend code to store something in the main viewport, in order for e.g. the mouse handling
     // code to operator a consistent manner.
-    // It is expected that the backends can handle calls to Renderer_DestroyWindow/Platform_DestroyWindow without
+    // It is expected that the backend can handle calls to Renderer_DestroyWindow/Platform_DestroyWindow without
     // crashing if it doesn't have data stored.
     ImGuiContext& g = *GImGui;
     for (ImGuiViewportP* viewport : g.Viewports)
@@ -18090,7 +18106,7 @@ void ImGui::DockContextProcessDock(ImGuiContext* ctx, ImGuiDockRequest* req)
 //   Undocking a large (~full screen) window would leave it so large that the bottom right sizing corner would more
 //   than likely be off the screen and the window would be hard to resize to fit on screen. This can be particularly problematic
 //   with 'ConfigWindowsMoveFromTitleBarOnly=true' and/or with 'ConfigWindowsResizeFromEdges=false' as well (the later can be
-//   due to missing ImGuiBackendFlags_HasMouseCursors backends flag).
+//   due to missing ImGuiBackendFlags_HasMouseCursors backend flag).
 // Solution:
 //   When undocking a window we currently force its maximum size to 90% of the host viewport or monitor.
 // Reevaluate this when we implement preserving docked/undocked size ("docking_wip/undocked_size" branch).
@@ -19354,7 +19370,8 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
             if (tab->Window)
             {
                 FocusWindow(tab->Window);
-                NavInitWindow(tab->Window, false);
+                if (g.NavId == 0) // only init if FocusWindow() didn't restore anything.
+                    NavInitWindow(tab->Window, false);
             }
 
     EndTabBar();

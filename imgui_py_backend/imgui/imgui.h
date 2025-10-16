@@ -1,4 +1,4 @@
-// dear imgui, v1.92.4 WIP
+// dear imgui, v1.92.4
 // (headers)
 
 // Help:
@@ -28,8 +28,8 @@
 
 // Library Version
 // (Integer encoded as XYYZZ for use in #if preprocessor conditionals, e.g. '#if IMGUI_VERSION_NUM >= 12345')
-#define IMGUI_VERSION       "1.92.4 WIP"
-#define IMGUI_VERSION_NUM   19234
+#define IMGUI_VERSION       "1.92.4"
+#define IMGUI_VERSION_NUM   19240
 #define IMGUI_HAS_TABLE             // Added BeginTable() - from IMGUI_VERSION_NUM >= 18000
 #define IMGUI_HAS_TEXTURES          // Added ImGuiBackendFlags_RendererHasTextures - from IMGUI_VERSION_NUM >= 19198
 #define IMGUI_HAS_VIEWPORT          // In 'docking' WIP branch.
@@ -181,7 +181,7 @@ struct ImFontBaked;                 // Baked data for a ImFont at a given size.
 struct ImFontConfig;                // Configuration data when adding a font or merging fonts
 struct ImFontGlyph;                 // A single font glyph (code point + coordinates within in ImFontAtlas + offset)
 struct ImFontGlyphRangesBuilder;    // Helper to build glyph ranges from text/string data
-struct ImFontLoader;                // Opaque interface to a font loading backends (stb_truetype, FreeType etc.).
+struct ImFontLoader;                // Opaque interface to a font loading backend (stb_truetype, FreeType etc.).
 struct ImTextureData;               // Specs and pixel storage for a texture used by Dear ImGui.
 struct ImTextureRect;               // Coordinates of a rectangle within a texture.
 struct ImColor;                     // Helper functions to create a color that can be converted to either u32 or float4 (*OBSOLETE* please avoid using)
@@ -210,7 +210,7 @@ struct ImGuiTableColumnSortSpecs;   // Sorting specification for one column of a
 struct ImGuiTextBuffer;             // Helper to hold and append into a text buffer (~string builder)
 struct ImGuiTextFilter;             // Helper to parse and apply text filters (e.g. "aaaaa[,bbbbb][,ccccc]")
 struct ImGuiViewport;               // A Platform Window (always 1 unless multi-viewport are enabled. One per platform window to output to). In the future may represent Platform Monitor
-struct ImGuiWindowClass;            // Window class (rare/advanced uses: provide hints to the platform backends via altered viewport flags and parent/child info)
+struct ImGuiWindowClass;            // Window class (rare/advanced uses: provide hints to the platform backend via altered viewport flags and parent/child info)
 
 // Enumerations
 // - We don't use strongly typed enums much because they add constraints (can't extend in private code, can't store typed in bit fields, extra casting on iteration)
@@ -321,11 +321,11 @@ IM_MSVC_RUNTIME_CHECKS_RESTORE
 // [SECTION] Texture identifiers (ImTextureID, ImTextureRef)
 //-----------------------------------------------------------------------------
 
-// ImTextureID = backends specific, low-level identifier for a texture uploaded in GPU/graphics system.
+// ImTextureID = backend specific, low-level identifier for a texture uploaded in GPU/graphics system.
 // [Compile-time configurable type]
 // - When a Rendered Backend creates a texture, it store its native identifier into a ImTextureID value.
-//   (e.g. Used by DX11 backends to a `ID3D11ShaderResourceView*`; Used by OpenGL backends to store `GLuint`;
-//         Used by SDLGPU backends to store a `SDL_GPUTextureSamplerBinding*`, etc.).
+//   (e.g. Used by DX11 backend to a `ID3D11ShaderResourceView*`; Used by OpenGL backends to store `GLuint`;
+//         Used by SDLGPU backend to store a `SDL_GPUTextureSamplerBinding*`, etc.).
 // - User may submit their own textures to e.g. ImGui::Image() function by passing this value.
 // - During the rendering loop, the Renderer Backend retrieve the ImTextureID, which stored inside a
 //   ImTextureRef, which is stored inside a ImDrawCmd.
@@ -341,7 +341,7 @@ IM_MSVC_RUNTIME_CHECKS_RESTORE
 typedef ImU64 ImTextureID;      // Default: store up to 64-bits (any pointer or integer). A majority of backends are ok with that.
 #endif
 
-// Define this if you need 0 to be a valid ImTextureID for your backends.
+// Define this if you need 0 to be a valid ImTextureID for your backend.
 #ifndef ImTextureID_Invalid
 #define ImTextureID_Invalid     ((ImTextureID)0)
 #endif
@@ -352,7 +352,7 @@ typedef ImU64 ImTextureID;      // Default: store up to 64-bits (any pointer or 
 // This is what gets stored in draw commands (`ImDrawCmd`) to identify a texture during rendering.
 // - When a texture is created by user code (e.g. custom images), we directly stores the low-level ImTextureID.
 //   Because of this, when displaying your own texture you are likely to ever only manage ImTextureID values on your side.
-// - When a texture is created by the backends, we stores a ImTextureData* which becomes an indirection
+// - When a texture is created by the backend, we stores a ImTextureData* which becomes an indirection
 //   to extract the ImTextureID value during rendering, after texture upload has happened.
 // - To create a ImTextureRef from a ImTextureData you can use ImTextureData::GetTexRef().
 //   We intentionally do not provide an ImTextureRef constructor for this: we don't expect this
@@ -375,7 +375,7 @@ struct ImTextureRef
 
     // Members (either are set, never both!)
     ImTextureData*      _TexData;           //      A texture, generally owned by a ImFontAtlas. Will convert to ImTextureID during render loop, after texture has been uploaded.
-    ImTextureID         _TexID;             // _OR_ Low-level backends texture identifier, if already uploaded or created by user/app. Generally provided to e.g. ImGui::Image() calls.
+    ImTextureID         _TexID;             // _OR_ Low-level backend texture identifier, if already uploaded or created by user/app. Generally provided to e.g. ImGui::Image() calls.
 };
 IM_MSVC_RUNTIME_CHECKS_RESTORE
 
@@ -956,22 +956,28 @@ namespace ImGui
     IMGUI_API void          SetTabItemClosed(const char* tab_or_docked_window_label);           // notify TabBar or Docking system of a closed tab/window ahead (useful to reduce visual flicker on reorderable tab bars). For tab-bar: call after BeginTabBar() and before Tab submissions. Otherwise call with a window name.
 
     // Docking
-    // [BETA API] Enable with io.ConfigFlags |= ImGuiConfigFlags_DockingEnable.
-    // Note: You can use most Docking facilities without calling any API. You DO NOT need to call DockSpace() to use Docking!
-    // - Drag from window title bar or their tab to dock/undock. Hold SHIFT to disable docking.
-    // - Drag from window menu button (upper-left button) to undock an entire node (all windows).
-    // - When io.ConfigDockingWithShift == true, you instead need to hold SHIFT to enable docking.
-    // About dockspaces:
-    // - Use DockSpaceOverViewport() to create a window covering the screen or a specific viewport + a dockspace inside it.
-    //   This is often used with ImGuiDockNodeFlags_PassthruCentralNode to make it transparent.
-    // - Use DockSpace() to create an explicit dock node _within_ an existing window. See Docking demo for details.
-    // - Important: Dockspaces need to be submitted _before_ any window they can host. Submit it early in your frame!
-    // - Important: Dockspaces need to be kept alive if hidden, otherwise windows docked into it will be undocked.
-    //   e.g. if you have multiple tabs with a dockspace inside each tab: submit the non-visible dockspaces with ImGuiDockNodeFlags_KeepAliveOnly.
+    // - Read https://github.com/ocornut/imgui/wiki/Docking for details.
+    // - Enable with io.ConfigFlags |= ImGuiConfigFlags_DockingEnable.
+    // - You can use most Docking facilities without calling any API. You don't necessarily need to call a DockSpaceXXX function to use Docking!
+    //   - Drag from window title bar or their tab to dock/undock. Hold SHIFT to disable docking.
+    //   - Drag from window menu button (upper-left button) to undock an entire node (all windows).
+    //   - When io.ConfigDockingWithShift == true, you instead need to hold SHIFT to enable docking.
+    // - Dockspaces:
+    //   - If you want to dock windows into the edge of your screen, most application can simply call DockSpaceOverViewport():
+    //     e.g. ImGui::NewFrame(); then ImGui::DockSpaceOverViewport();  // Create a dockspace in main viewport.
+    //      or: ImGui::NewFrame(); then ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode);  // Create a dockspace in main viewport, where central node is transparent.
+    //   - A dockspace is an explicit dock node within an existing window.
+    //   - DockSpaceOverViewport() basically creates an invisible window covering a viewport, and submit a DockSpace() into it.
+    //   - IMPORTANT: Dockspaces need to be submitted _before_ any window they can host. Submit them early in your frame!
+    //   - IMPORTANT: Dockspaces need to be kept alive if hidden, otherwise windows docked into it will be undocked.
+    //     If you have e.g. multiple tabs with a dockspace inside each tab: submit the non-visible dockspaces with ImGuiDockNodeFlags_KeepAliveOnly.
+    // - Programmatic docking:
+    //   - There is no public API yet other than the very limited SetNextWindowDockID() function. Sorry for that!
+    //   - Read https://github.com/ocornut/imgui/wiki/Docking for examples of how to use current internal API.
     IMGUI_API ImGuiID       DockSpace(ImGuiID dockspace_id, const ImVec2& size = ImVec2(0, 0), ImGuiDockNodeFlags flags = 0, const ImGuiWindowClass* window_class = NULL);
     IMGUI_API ImGuiID       DockSpaceOverViewport(ImGuiID dockspace_id = 0, const ImGuiViewport* viewport = NULL, ImGuiDockNodeFlags flags = 0, const ImGuiWindowClass* window_class = NULL);
     IMGUI_API void          SetNextWindowDockID(ImGuiID dock_id, ImGuiCond cond = 0);           // set next window dock id
-    IMGUI_API void          SetNextWindowClass(const ImGuiWindowClass* window_class);           // set next window class (control docking compatibility + provide hints to platform backends via custom viewport flags and platform parent/child relationship)
+    IMGUI_API void          SetNextWindowClass(const ImGuiWindowClass* window_class);           // set next window class (control docking compatibility + provide hints to platform backend via custom viewport flags and platform parent/child relationship)
     IMGUI_API ImGuiID       GetWindowDockID();
     IMGUI_API bool          IsWindowDocked();                                                   // is current window docked into another window?
 
@@ -1121,7 +1127,7 @@ namespace ImGui
     IMGUI_API int           GetMouseClickedCount(ImGuiMouseButton button);                      // return the number of successive mouse-clicks at the time where a click happen (otherwise 0).
     IMGUI_API bool          IsMouseHoveringRect(const ImVec2& r_min, const ImVec2& r_max, bool clip = true);// is mouse hovering given bounding rect (in screen space). clipped by current clipping settings, but disregarding of other consideration of focus/window ordering/popup-block.
     IMGUI_API bool          IsMousePosValid(const ImVec2* mouse_pos = NULL);                    // by convention we use (-FLT_MAX,-FLT_MAX) to denote that there is no mouse available
-    IMGUI_API bool          IsAnyMouseDown();                                                   // [WILL OBSOLETE] is any mouse button held? This was designed for backends, but prefer having backends maintain a mask of held mouse buttons, because upcoming input queue system will make this invalid.
+    IMGUI_API bool          IsAnyMouseDown();                                                   // [WILL OBSOLETE] is any mouse button held? This was designed for backends, but prefer having backend maintain a mask of held mouse buttons, because upcoming input queue system will make this invalid.
     IMGUI_API ImVec2        GetMousePos();                                                      // shortcut to ImGui::GetIO().MousePos provided by user, to be consistent with other calls
     IMGUI_API ImVec2        GetMousePosOnOpeningCurrentPopup();                                 // retrieve mouse position at the time of opening popup we have BeginPopup() into (helper to avoid user backing that value themselves)
     IMGUI_API bool          IsMouseDragging(ImGuiMouseButton button, float lock_threshold = -1.0f);         // is mouse dragging? (uses io.MouseDraggingThreshold if lock_threshold < 0.0f)
@@ -1170,9 +1176,9 @@ namespace ImGui
     // Note: You may use GetWindowViewport() to get the current viewport of the current window.
     IMGUI_API void          UpdatePlatformWindows();                                // call in main loop. will call CreateWindow/ResizeWindow/etc. platform functions for each secondary viewport, and DestroyWindow for each inactive viewport.
     IMGUI_API void          RenderPlatformWindowsDefault(void* platform_render_arg = NULL, void* renderer_render_arg = NULL); // call in main loop. will call RenderWindow/SwapBuffers platform functions for each secondary viewport which doesn't have the ImGuiViewportFlags_Minimized flag set. May be reimplemented by user for custom rendering needs.
-    IMGUI_API void          DestroyPlatformWindows();                               // call DestroyWindow platform functions for all viewports. call from backends Shutdown() if you need to close platform windows before imgui shutdown. otherwise will be called by DestroyContext().
+    IMGUI_API void          DestroyPlatformWindows();                               // call DestroyWindow platform functions for all viewports. call from backend Shutdown() if you need to close platform windows before imgui shutdown. otherwise will be called by DestroyContext().
     IMGUI_API ImGuiViewport* FindViewportByID(ImGuiID id);                          // this is a helper for backends.
-    IMGUI_API ImGuiViewport* FindViewportByPlatformHandle(void* platform_handle);   // this is a helper for backends. the type platform_handle is decided by the backends (e.g. HWND, MyWindow*, GLFWwindow* etc.)
+    IMGUI_API ImGuiViewport* FindViewportByPlatformHandle(void* platform_handle);   // this is a helper for backends. the type platform_handle is decided by the backend (e.g. HWND, MyWindow*, GLFWwindow* etc.)
 
 } // namespace ImGui
 
@@ -1350,7 +1356,7 @@ enum ImGuiTreeNodeFlags_
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     ImGuiTreeNodeFlags_NavLeftJumpsBackHere = ImGuiTreeNodeFlags_NavLeftJumpsToParent,  // Renamed in 1.92.0
     ImGuiTreeNodeFlags_SpanTextWidth        = ImGuiTreeNodeFlags_SpanLabelWidth,        // Renamed in 1.90.7
-    ImGuiTreeNodeFlags_AllowItemOverlap     = ImGuiTreeNodeFlags_AllowOverlap,          // Renamed in 1.89.7
+    //ImGuiTreeNodeFlags_AllowItemOverlap   = ImGuiTreeNodeFlags_AllowOverlap,          // Renamed in 1.89.7
 #endif
 };
 
@@ -1393,7 +1399,7 @@ enum ImGuiSelectableFlags_
 
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     ImGuiSelectableFlags_DontClosePopups    = ImGuiSelectableFlags_NoAutoClosePopups,   // Renamed in 1.91.0
-    ImGuiSelectableFlags_AllowItemOverlap   = ImGuiSelectableFlags_AllowOverlap,        // Renamed in 1.89.7
+    //ImGuiSelectableFlags_AllowItemOverlap = ImGuiSelectableFlags_AllowOverlap,        // Renamed in 1.89.7
 #endif
 };
 
@@ -1696,7 +1702,7 @@ enum ImGuiKey : int
     ImGuiKey_NamedKey_END,
     ImGuiKey_NamedKey_COUNT = ImGuiKey_NamedKey_END - ImGuiKey_NamedKey_BEGIN,
 
-    // Keyboard Modifiers (explicitly submitted by backends via AddKeyEvent() calls)
+    // Keyboard Modifiers (explicitly submitted by backend via AddKeyEvent() calls)
     // - Any functions taking a ImGuiKeyChord parameter can binary-or those with regular keys, e.g. Shortcut(ImGuiMod_Ctrl | ImGuiKey_S).
     // - Those are written back into io.KeyCtrl, io.KeyShift, io.KeyAlt, io.KeySuper for convenience,
     //   but may be accessed via standard key API such as IsKeyPressed(), IsKeyReleased(), querying duration etc.
@@ -1753,7 +1759,7 @@ enum ImGuiConfigFlags_
     ImGuiConfigFlags_NavEnableKeyboard      = 1 << 0,   // Master keyboard navigation enable flag. Enable full Tabbing + directional arrows + space/enter to activate.
     ImGuiConfigFlags_NavEnableGamepad       = 1 << 1,   // Master gamepad navigation enable flag. Backend also needs to set ImGuiBackendFlags_HasGamepad.
     ImGuiConfigFlags_NoMouse                = 1 << 4,   // Instruct dear imgui to disable mouse inputs and interactions.
-    ImGuiConfigFlags_NoMouseCursorChange    = 1 << 5,   // Instruct backends to not alter mouse cursor shape and visibility. Use if the backends cursor changes are interfering with yours and you don't want to use SetMouseCursor() to change mouse cursor. You may want to honor requests from imgui by reading GetMouseCursor() yourself instead.
+    ImGuiConfigFlags_NoMouseCursorChange    = 1 << 5,   // Instruct backend to not alter mouse cursor shape and visibility. Use if the backend cursor changes are interfering with yours and you don't want to use SetMouseCursor() to change mouse cursor. You may want to honor requests from imgui by reading GetMouseCursor() yourself instead.
     ImGuiConfigFlags_NoKeyboard             = 1 << 6,   // Instruct dear imgui to disable keyboard inputs and interactions. This is done by ignoring keyboard events and clearing existing states.
 
     // [BETA] Docking
@@ -1763,7 +1769,7 @@ enum ImGuiConfigFlags_
     // When using viewports it is recommended that your default value for ImGuiCol_WindowBg is opaque (Alpha=1.0) so transition to a viewport won't be noticeable.
     ImGuiConfigFlags_ViewportsEnable        = 1 << 10,  // Viewport enable flags (require both ImGuiBackendFlags_PlatformHasViewports + ImGuiBackendFlags_RendererHasViewports set by the respective backends)
 
-    // User storage (to allow your backends/engine to communicate to code that may be shared between multiple projects. Those flags are NOT used by core Dear ImGui)
+    // User storage (to allow your backend/engine to communicate to code that may be shared between multiple projects. Those flags are NOT used by core Dear ImGui)
     ImGuiConfigFlags_IsSRGB                 = 1 << 20,  // Application is SRGB-aware.
     ImGuiConfigFlags_IsTouchScreen          = 1 << 21,  // Application is using a touch screen instead of a mouse.
 
@@ -1775,7 +1781,7 @@ enum ImGuiConfigFlags_
 #endif
 };
 
-// Backend capabilities flags stored in io.BackendFlags. Set by imgui_impl_xxx or custom backends.
+// Backend capabilities flags stored in io.BackendFlags. Set by imgui_impl_xxx or custom backend.
 enum ImGuiBackendFlags_
 {
     ImGuiBackendFlags_None                  = 0,
@@ -1783,12 +1789,12 @@ enum ImGuiBackendFlags_
     ImGuiBackendFlags_HasMouseCursors       = 1 << 1,   // Backend Platform supports honoring GetMouseCursor() value to change the OS cursor shape.
     ImGuiBackendFlags_HasSetMousePos        = 1 << 2,   // Backend Platform supports io.WantSetMousePos requests to reposition the OS mouse position (only used if io.ConfigNavMoveSetMousePos is set).
     ImGuiBackendFlags_RendererHasVtxOffset  = 1 << 3,   // Backend Renderer supports ImDrawCmd::VtxOffset. This enables output of large meshes (64K+ vertices) while still using 16-bit indices.
-    ImGuiBackendFlags_RendererHasTextures   = 1 << 4,   // Backend Renderer supports ImTextureData requests to create/update/destroy textures. This enables incremental texture updates and texture reloads. See https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md for instructions on how to upgrade your custom backends.
+    ImGuiBackendFlags_RendererHasTextures   = 1 << 4,   // Backend Renderer supports ImTextureData requests to create/update/destroy textures. This enables incremental texture updates and texture reloads. See https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md for instructions on how to upgrade your custom backend.
 
     // [BETA] Multi-Viewports
     ImGuiBackendFlags_RendererHasViewports  = 1 << 10,  // Backend Renderer supports multiple viewports.
     ImGuiBackendFlags_PlatformHasViewports  = 1 << 11,  // Backend Platform supports multiple viewports.
-    ImGuiBackendFlags_HasMouseHoveredViewport=1 << 12,  // Backend Platform supports calling io.AddMouseViewportEvent() with the viewport under the mouse. IF POSSIBLE, ignore viewports with the ImGuiViewportFlags_NoInputs flag (Win32 backends, GLFW 3.30+ backends can do this, SDL backends cannot). If this cannot be done, Dear ImGui needs to use a flawed heuristic to find the viewport under.
+    ImGuiBackendFlags_HasMouseHoveredViewport=1 << 12,  // Backend Platform supports calling io.AddMouseViewportEvent() with the viewport under the mouse. IF POSSIBLE, ignore viewports with the ImGuiViewportFlags_NoInputs flag (Win32 backend, GLFW 3.30+ backend can do this, SDL backend cannot). If this cannot be done, Dear ImGui needs to use a flawed heuristic to find the viewport under.
     ImGuiBackendFlags_HasParentViewport     = 1 << 13,  // Backend Platform supports honoring viewport->ParentViewport/ParentViewportId value, by applying the corresponding parent/child relation at the Platform level.
 };
 
@@ -1851,6 +1857,7 @@ enum ImGuiCol_
     ImGuiCol_TextSelectedBg,        // Selected text inside an InputText
     ImGuiCol_TreeLines,             // Tree node hierarchy outlines when using ImGuiTreeNodeFlags_DrawLines
     ImGuiCol_DragDropTarget,        // Rectangle highlighting a drop target
+    ImGuiCol_UnsavedMarker,         // Unsaved Document marker (in window title and tabs)
     ImGuiCol_NavCursor,             // Color of keyboard/gamepad navigation cursor/rectangle, when visible
     ImGuiCol_NavWindowingHighlight, // Highlight window when using CTRL+TAB
     ImGuiCol_NavWindowingDimBg,     // Darken/colorize entire screen behind the CTRL+TAB window list, when active
@@ -2012,7 +2019,7 @@ enum ImGuiMouseButton_
 };
 
 // Enumeration for GetMouseCursor()
-// User code may request backends to display given cursor by calling SetMouseCursor(), which is why we have some cursors that are marked unused here
+// User code may request backend to display given cursor by calling SetMouseCursor(), which is why we have some cursors that are marked unused here
 enum ImGuiMouseCursor_
 {
     ImGuiMouseCursor_None = -1,
@@ -2394,7 +2401,7 @@ struct ImGuiStyle
     float       DockingSeparatorSize;       // Thickness of resizing border between docked windows
     float       MouseCursorScale;           // Scale software rendered mouse cursor (when io.MouseDrawCursor is enabled). We apply per-monitor DPI scaling over this scale. May be removed later.
     bool        AntiAliasedLines;           // Enable anti-aliased lines/borders. Disable if you are really tight on CPU/GPU. Latched at the beginning of the frame (copied to ImDrawList).
-    bool        AntiAliasedLinesUseTex;     // Enable anti-aliased lines/borders using textures where possible. Require backends to render with bilinear filtering (NOT point/nearest filtering). Latched at the beginning of the frame (copied to ImDrawList).
+    bool        AntiAliasedLinesUseTex;     // Enable anti-aliased lines/borders using textures where possible. Require backend to render with bilinear filtering (NOT point/nearest filtering). Latched at the beginning of the frame (copied to ImDrawList).
     bool        AntiAliasedFill;            // Enable anti-aliased edges around filled shapes (rounded rectangles, circles, etc.). Disable if you are really tight on CPU/GPU. Latched at the beginning of the frame (copied to ImDrawList).
     float       CurveTessellationTol;       // Tessellation tolerance when using PathBezierCurveTo() without a specific number of segments. Decrease for highly tessellated curves (higher quality, more polygons), increase to reduce quality.
     float       CircleTessellationMaxError; // Maximum error (in pixels) allowed when using AddCircle()/AddCircleFilled() or drawing rounded corner rectangles with no explicit segment count specified. Decrease for higher quality but more geometry.
@@ -2453,7 +2460,7 @@ struct ImGuiIO
     //------------------------------------------------------------------
 
     ImGuiConfigFlags   ConfigFlags;             // = 0              // See ImGuiConfigFlags_ enum. Set by user/application. Keyboard/Gamepad navigation options, etc.
-    ImGuiBackendFlags  BackendFlags;            // = 0              // See ImGuiBackendFlags_ enum. Set by backends (imgui_impl_xxx files or custom backends) to communicate features supported by the backends.
+    ImGuiBackendFlags  BackendFlags;            // = 0              // See ImGuiBackendFlags_ enum. Set by backend (imgui_impl_xxx files or custom backend) to communicate features supported by the backend.
     ImVec2      DisplaySize;                    // <unset>          // Main display size, in pixels (== GetMainViewport()->Size). May change every frame.
     ImVec2      DisplayFramebufferScale;        // = (1, 1)         // Main display density. For retina display where window coordinates are different from framebuffer coordinates. This will affect font density + will end up in ImDrawData::FramebufferScale.
     float       DeltaTime;                      // = 1.0f/60.0f     // Time elapsed since last frame, in seconds. May change every frame.
@@ -2486,7 +2493,7 @@ struct ImGuiIO
     bool        ConfigViewportsNoAutoMerge;     // = false;         // Set to make all floating imgui windows always create their own viewport. Otherwise, they are merged into the main host viewports when overlapping it. May also set ImGuiViewportFlags_NoAutoMerge on individual viewport.
     bool        ConfigViewportsNoTaskBarIcon;   // = false          // Disable default OS task bar icon flag for secondary viewports. When a viewport doesn't want a task bar icon, ImGuiViewportFlags_NoTaskBarIcon will be set on it.
     bool        ConfigViewportsNoDecoration;    // = true           // Disable default OS window decoration flag for secondary viewports. When a viewport doesn't want window decorations, ImGuiViewportFlags_NoDecoration will be set on it. Enabling decoration can create subsequent issues at OS levels (e.g. minimum window size).
-    bool        ConfigViewportsNoDefaultParent; // = true           // When false: set secondary viewports' ParentViewportId to main viewport ID by default. Expects the platform backends to setup a parent/child relationship between the OS windows based on this value. Some backends may ignore this. Set to true if you want viewports to automatically be parent of main viewport, otherwise all viewports will be top-level OS windows.
+    bool        ConfigViewportsNoDefaultParent; // = true           // When false: set secondary viewports' ParentViewportId to main viewport ID by default. Expects the platform backend to setup a parent/child relationship between the OS windows based on this value. Some backend may ignore this. Set to true if you want viewports to automatically be parent of main viewport, otherwise all viewports will be top-level OS windows.
     bool        ConfigViewportsPlatformFocusSetsImGuiFocus;//= true // When a platform window is focused (e.g. using Alt+Tab, clicking Platform Title Bar), apply corresponding focus on imgui windows (may clear focus/active id from imgui windows location in other platform windows). In principle this is better enabled but we provide an opt-out, because some Linux window managers tend to eagerly focus windows (e.g. on mouse hover, or even a simple window pos/size change).
 
     // DPI/Scaling options
@@ -2496,7 +2503,7 @@ struct ImGuiIO
 
     // Miscellaneous options
     // (you can visualize and interact with all options in 'Demo->Configuration')
-    bool        MouseDrawCursor;                // = false          // Request ImGui to draw a mouse cursor for you (if you are on a platform without a mouse cursor). Cannot be easily renamed to 'io.ConfigXXX' because this is frequently used by backends implementations.
+    bool        MouseDrawCursor;                // = false          // Request ImGui to draw a mouse cursor for you (if you are on a platform without a mouse cursor). Cannot be easily renamed to 'io.ConfigXXX' because this is frequently used by backend implementations.
     bool        ConfigMacOSXBehaviors;          // = defined(__APPLE__) // Swap Cmd<>Ctrl keys + OS X style text editing cursor movement using Alt instead of Ctrl, Shortcuts using Cmd/Super instead of Ctrl, Line/Text Start and End using Cmd+Arrows instead of Home/End, Double click selects by word instead of selecting whole text, Multi-selection in lists uses Cmd/Super instead of Ctrl.
     bool        ConfigInputTrickleEventQueue;   // = true           // Enable input queue trickling: some types of events submitted during the same frame (e.g. button down + up) will be spread over multiple frames, improving interactions with low framerates.
     bool        ConfigInputTextCursorBlink;     // = true           // Enable blinking cursor (optional as some users consider it to be distracting).
@@ -2569,16 +2576,16 @@ struct ImGuiIO
 
     //------------------------------------------------------------------
     // Platform Identifiers
-    // (the imgui_impl_xxxx backends files are setting those up for you)
+    // (the imgui_impl_xxxx backend files are setting those up for you)
     //------------------------------------------------------------------
 
     // Nowadays those would be stored in ImGuiPlatformIO but we are leaving them here for legacy reasons.
-    // Optional: Platform/Renderer backends name (informational only! will be displayed in About Window) + User data for backends/wrappers to store their own stuff.
+    // Optional: Platform/Renderer backend name (informational only! will be displayed in About Window) + User data for backend/wrappers to store their own stuff.
     const char* BackendPlatformName;            // = NULL
     const char* BackendRendererName;            // = NULL
-    void*       BackendPlatformUserData;        // = NULL           // User data for platform backends
-    void*       BackendRendererUserData;        // = NULL           // User data for renderer backends
-    void*       BackendLanguageUserData;        // = NULL           // User data for non C++ programming language backends
+    void*       BackendPlatformUserData;        // = NULL           // User data for platform backend
+    void*       BackendRendererUserData;        // = NULL           // User data for renderer backend
+    void*       BackendLanguageUserData;        // = NULL           // User data for non C++ programming language backend
 
     //------------------------------------------------------------------
     // Input - Call before calling NewFrame()
@@ -2586,12 +2593,12 @@ struct ImGuiIO
 
     // Input Functions
     IMGUI_API void  AddKeyEvent(ImGuiKey key, bool down);                   // Queue a new key down/up event. Key should be "translated" (as in, generally ImGuiKey_A matches the key end-user would use to emit an 'A' character)
-    IMGUI_API void  AddKeyAnalogEvent(ImGuiKey key, bool down, float v);    // Queue a new key down/up event for analog values (e.g. ImGuiKey_Gamepad_ values). Dead-zones should be handled by the backends.
+    IMGUI_API void  AddKeyAnalogEvent(ImGuiKey key, bool down, float v);    // Queue a new key down/up event for analog values (e.g. ImGuiKey_Gamepad_ values). Dead-zones should be handled by the backend.
     IMGUI_API void  AddMousePosEvent(float x, float y);                     // Queue a mouse position update. Use -FLT_MAX,-FLT_MAX to signify no mouse (e.g. app not focused and not hovered)
     IMGUI_API void  AddMouseButtonEvent(int button, bool down);             // Queue a mouse button change
     IMGUI_API void  AddMouseWheelEvent(float wheel_x, float wheel_y);       // Queue a mouse wheel update. wheel_y<0: scroll down, wheel_y>0: scroll up, wheel_x<0: scroll right, wheel_x>0: scroll left.
     IMGUI_API void  AddMouseSourceEvent(ImGuiMouseSource source);           // Queue a mouse source change (Mouse/TouchScreen/Pen)
-    IMGUI_API void  AddMouseViewportEvent(ImGuiID id);                      // Queue a mouse hovered viewport. Requires backends to set ImGuiBackendFlags_HasMouseHoveredViewport to call this (for multi-viewport support).
+    IMGUI_API void  AddMouseViewportEvent(ImGuiID id);                      // Queue a mouse hovered viewport. Requires backend to set ImGuiBackendFlags_HasMouseHoveredViewport to call this (for multi-viewport support).
     IMGUI_API void  AddFocusEvent(bool focused);                            // Queue a gain/loss of focus for the application (generally based on OS/platform focus of your window)
     IMGUI_API void  AddInputCharacter(unsigned int c);                      // Queue a new character input
     IMGUI_API void  AddInputCharacterUTF16(ImWchar16 c);                    // Queue a new character input from a UTF-16 character, it can be a surrogate
@@ -2615,7 +2622,7 @@ struct ImGuiIO
     bool        WantCaptureMouse;                   // Set when Dear ImGui will use mouse inputs, in this case do not dispatch them to your main game/application (either way, always pass on mouse inputs to imgui). (e.g. unclicked mouse is hovering over an imgui window, widget is active, mouse was clicked over an imgui window, etc.).
     bool        WantCaptureKeyboard;                // Set when Dear ImGui will use keyboard inputs, in this case do not dispatch them to your main game/application (either way, always pass keyboard inputs to imgui). (e.g. InputText active, or an imgui window is focused and navigation is enabled, etc.).
     bool        WantTextInput;                      // Mobile/console: when set, you may display an on-screen keyboard. This is set by Dear ImGui when it wants textual keyboard input to happen (e.g. when a InputText widget is active).
-    bool        WantSetMousePos;                    // MousePos has been altered, backends should reposition mouse on next frame. Rarely used! Set only when io.ConfigNavMoveSetMousePos is enabled.
+    bool        WantSetMousePos;                    // MousePos has been altered, backend should reposition mouse on next frame. Rarely used! Set only when io.ConfigNavMoveSetMousePos is enabled.
     bool        WantSaveIniSettings;                // When manual .ini load/save is active (io.IniFilename == NULL), this will be set to notify your application that you can call SaveIniSettingsToMemory() and save yourself. Important: clear io.WantSaveIniSettings yourself after saving!
     bool        NavActive;                          // Keyboard/Gamepad navigation is currently allowed (will handle ImGuiKey_NavXXX events) = a window is focused and it doesn't use the ImGuiWindowFlags_NoNavInputs flag.
     bool        NavVisible;                         // Keyboard/Gamepad navigation highlight is visible and allowed (will handle ImGuiKey_NavXXX events).
@@ -2633,7 +2640,7 @@ struct ImGuiIO
     ImGuiContext* Ctx;                              // Parent UI context (needs to be set explicitly by parent).
 
     // Main Input State
-    // (this block used to be written by backends, since 1.87 it is best to NOT write to those directly, call the AddXXX functions above instead)
+    // (this block used to be written by backend, since 1.87 it is best to NOT write to those directly, call the AddXXX functions above instead)
     // (reading from those variables is fair game, as they are extremely unlikely to be moving anywhere)
     ImVec2      MousePos;                           // Mouse position, in pixels. Set to ImVec2(-FLT_MAX, -FLT_MAX) if mouse is unavailable (on another screen, etc.)
     bool        MouseDown[5];                       // Mouse buttons: 0=left, 1=right, 2=middle + extras (ImGuiMouseButton_COUNT == 5). Dear ImGui mostly uses left and right buttons. Other buttons allow us to track if the mouse is being used by your application + available to user as a convenience via IsMouse** API.
@@ -2671,14 +2678,14 @@ struct ImGuiIO
     bool        AppFocusLost;                       // Only modify via AddFocusEvent()
     bool        AppAcceptingEvents;                 // Only modify via SetAppAcceptingEvents()
     ImWchar16   InputQueueSurrogate;                // For AddInputCharacterUTF16()
-    ImVector<ImWchar> InputQueueCharacters;         // Queue of _characters_ input (obtained by platform backends). Fill using AddInputCharacter() helper.
+    ImVector<ImWchar> InputQueueCharacters;         // Queue of _characters_ input (obtained by platform backend). Fill using AddInputCharacter() helper.
 
-    // Legacy: before 1.87, we required backends to fill io.KeyMap[] (imgui->native map) during initialization and io.KeysDown[] (native indices) every frame.
-    // This is still temporarily supported as a legacy feature. However the new preferred scheme is for backends to call io.AddKeyEvent().
+    // Legacy: before 1.87, we required backend to fill io.KeyMap[] (imgui->native map) during initialization and io.KeysDown[] (native indices) every frame.
+    // This is still temporarily supported as a legacy feature. However the new preferred scheme is for backend to call io.AddKeyEvent().
     //   Old (<1.87):  ImGui::IsKeyPressed(ImGui::GetIO().KeyMap[ImGuiKey_Space]) --> New (1.87+) ImGui::IsKeyPressed(ImGuiKey_Space)
     //   Old (<1.87):  ImGui::IsKeyPressed(MYPLATFORM_KEY_SPACE)                  --> New (1.87+) ImGui::IsKeyPressed(ImGuiKey_Space)
     // Read https://github.com/ocornut/imgui/issues/4921 for details.
-    //int       KeyMap[ImGuiKey_COUNT];             // [LEGACY] Input: map of indices into the KeysDown[512] entries array which represent your "native" keyboard state. The first 512 are now unused and should be kept zero. Legacy backends will write into KeyMap[] using ImGuiKey_ indices which are always >512.
+    //int       KeyMap[ImGuiKey_COUNT];             // [LEGACY] Input: map of indices into the KeysDown[512] entries array which represent your "native" keyboard state. The first 512 are now unused and should be kept zero. Legacy backend will write into KeyMap[] using ImGuiKey_ indices which are always >512.
     //bool      KeysDown[ImGuiKey_COUNT];           // [LEGACY] Input: Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys). This used to be [512] sized. It is now ImGuiKey_COUNT to allow legacy io.KeysDown[GetKeyIndex(...)] to work without an overflow.
     //float     NavInputs[ImGuiNavInput_COUNT];     // [LEGACY] Since 1.88, NavInputs[] was removed. Backends from 1.60 to 1.86 won't build. Feed gamepad inputs via io.AddKeyEvent() and ImGuiKey_GamepadXXX enums.
     //void*     ImeWindowHandle;                    // [Obsoleted in 1.87] Set ImGuiViewport::PlatformHandleRaw instead. Set this to your HWND to get automatic IME cursor positioning.
@@ -2755,13 +2762,13 @@ struct ImGuiSizeCallbackData
 // Important: the content of this class is still highly WIP and likely to change and be refactored
 // before we stabilize Docking features. Please be mindful if using this.
 // Provide hints:
-// - To the platform backends via altered viewport flags (enable/disable OS decoration, OS task bar icons, etc.)
-// - To the platform backends for OS level parent/child relationships of viewport.
+// - To the platform backend via altered viewport flags (enable/disable OS decoration, OS task bar icons, etc.)
+// - To the platform backend for OS level parent/child relationships of viewport.
 // - To the docking system for various options and filtering.
 struct ImGuiWindowClass
 {
     ImGuiID             ClassId;                    // User data. 0 = Default class (unclassed). Windows of different classes cannot be docked with each others.
-    ImGuiID             ParentViewportId;           // Hint for the platform backends. -1: use default. 0: request platform backends to not parent the platform. != 0: request platform backends to create a parent<>child relationship between the platform windows. Not conforming backends are free to e.g. parent every viewport to the main viewport or not.
+    ImGuiID             ParentViewportId;           // Hint for the platform backend. -1: use default. 0: request platform backend to not parent the platform. != 0: request platform backend to create a parent<>child relationship between the platform windows. Not conforming backends are free to e.g. parent every viewport to the main viewport or not.
     ImGuiID             FocusRouteParentWindowId;   // ID of parent window for shortcut focus route evaluation, e.g. Shortcut() call from Parent Window will succeed when this window is focused.
     ImGuiViewportFlags  ViewportFlagsOverrideSet;   // Viewport flags to set when a window of this class owns a viewport. This allows you to enforce OS decoration or task bar icon, override the defaults on a per-window basis.
     ImGuiViewportFlags  ViewportFlagsOverrideClear; // Viewport flags to clear when a window of this class owns a viewport. This allows you to enforce OS decoration or task bar icon, override the defaults on a per-window basis.
@@ -2977,7 +2984,7 @@ struct ImGuiListClipper
     IMGUI_API void  SeekCursorForItem(int item_index);
 
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    inline void IncludeRangeByIndices(int item_begin, int item_end)      { IncludeItemsByIndex(item_begin, item_end); } // [renamed in 1.89.9]
+    //inline void IncludeRangeByIndices(int item_begin, int item_end)      { IncludeItemsByIndex(item_begin, item_end); } // [renamed in 1.89.9]
     //inline void ForceDisplayRangeByIndices(int item_begin, int item_end) { IncludeItemsByIndex(item_begin, item_end); } // [renamed in 1.89.6]
     //inline ImGuiListClipper(int items_count, float items_height = -1.0f) { memset(this, 0, sizeof(*this)); ItemsCount = -1; Begin(items_count, items_height); } // [removed in 1.79]
 #endif
@@ -3022,7 +3029,7 @@ IM_MSVC_RUNTIME_CHECKS_RESTORE
 
 // Helpers macros to generate 32-bit encoded colors
 // - User can declare their own format by #defining the 5 _SHIFT/_MASK macros in their imconfig file.
-// - Any setting other than the default will need custom backends support. The only standard backends that supports anything else than the default is DirectX9.
+// - Any setting other than the default will need custom backend support. The only standard backend that supports anything else than the default is DirectX9.
 #ifndef IM_COL32_R_SHIFT
 #ifdef IMGUI_USE_BGRA_PACKED_COLOR
 #define IM_COL32_R_SHIFT    16
@@ -3223,7 +3230,7 @@ struct ImGuiSelectionExternalStorage
 #endif
 
 // ImDrawIdx: vertex index. [Compile-time configurable type]
-// - To use 16-bit indices + allow large meshes: backends need to set 'io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset' and handle ImDrawCmd::VtxOffset (recommended).
+// - To use 16-bit indices + allow large meshes: backend need to set 'io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset' and handle ImDrawCmd::VtxOffset (recommended).
 // - To use 32-bit indices: override with '#define ImDrawIdx unsigned int' in your imconfig.h file.
 #ifndef ImDrawIdx
 typedef unsigned short ImDrawIdx;   // Default: 16-bit (for maximum compatibility with renderer backends)
@@ -3235,13 +3242,13 @@ typedef unsigned short ImDrawIdx;   // Default: 16-bit (for maximum compatibilit
 //  A) Change your GPU render state,
 //  B) render a complex 3D scene inside a UI element without an intermediate texture/render target, etc.
 // The expected behavior from your rendering function is 'if (cmd.UserCallback != NULL) { cmd.UserCallback(parent_list, cmd); } else { RenderTriangles() }'
-// If you want to override the signature of ImDrawCallback, you can simply use e.g. '#define ImDrawCallback MyDrawCallback' (in imconfig.h) + update rendering backends accordingly.
+// If you want to override the signature of ImDrawCallback, you can simply use e.g. '#define ImDrawCallback MyDrawCallback' (in imconfig.h) + update rendering backend accordingly.
 #ifndef ImDrawCallback
 typedef void (*ImDrawCallback)(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 #endif
 
-// Special Draw callback value to request renderer backends to reset the graphics/render state.
-// The renderer backends needs to handle this special value, otherwise it will crash trying to call a function at this address.
+// Special Draw callback value to request renderer backend to reset the graphics/render state.
+// The renderer backend needs to handle this special value, otherwise it will crash trying to call a function at this address.
 // This is useful, for example, if you submitted callbacks which you know have altered the render state and you want it to be restored.
 // Render state is not reset by default because they are many perfectly useful way of altering render state (e.g. changing shader/blending settings before an Image call).
 #define ImDrawCallback_ResetRenderState     (ImDrawCallback)(-8)
@@ -3254,7 +3261,7 @@ typedef void (*ImDrawCallback)(const ImDrawList* parent_list, const ImDrawCmd* c
 struct ImDrawCmd
 {
     ImVec4          ClipRect;           // 4*4  // Clipping rectangle (x1, y1, x2, y2). Subtract ImDrawData->DisplayPos to get clipping rectangle in "viewport" coordinates
-    ImTextureRef    TexRef;             // 16   // Reference to a font/texture atlas (where backends called ImTextureData::SetTexID()) or to a user-provided texture ID (via e.g. ImGui::Image() calls). Both will lead to a ImTextureID value.
+    ImTextureRef    TexRef;             // 16   // Reference to a font/texture atlas (where backend called ImTextureData::SetTexID()) or to a user-provided texture ID (via e.g. ImGui::Image() calls). Both will lead to a ImTextureID value.
     unsigned int    VtxOffset;          // 4    // Start offset in vertex buffer. ImGuiBackendFlags_RendererHasVtxOffset: always 0, otherwise may be >0 to support meshes larger than 64K vertices with 16-bit indices.
     unsigned int    IdxOffset;          // 4    // Start offset in index buffer.
     unsigned int    ElemCount;          // 4    // Number of indices (multiple of 3) to be rendered as triangles. Vertices are stored in the callee ImDrawList's vtx_buffer[] array, indices in idx_buffer[].
@@ -3344,7 +3351,7 @@ enum ImDrawListFlags_
 {
     ImDrawListFlags_None                    = 0,
     ImDrawListFlags_AntiAliasedLines        = 1 << 0,  // Enable anti-aliased lines/borders (*2 the number of triangles for 1.0f wide line or lines thin enough to be drawn using textures, otherwise *3 the number of triangles)
-    ImDrawListFlags_AntiAliasedLinesUseTex  = 1 << 1,  // Enable anti-aliased lines/borders using textures when possible. Require backends to render with bilinear filtering (NOT point/nearest filtering).
+    ImDrawListFlags_AntiAliasedLinesUseTex  = 1 << 1,  // Enable anti-aliased lines/borders using textures when possible. Require backend to render with bilinear filtering (NOT point/nearest filtering).
     ImDrawListFlags_AntiAliasedFill         = 1 << 2,  // Enable anti-aliased edge around filled shapes (rounded rectangles, circles).
     ImDrawListFlags_AllowVtxOffset          = 1 << 3,  // Can emit 'VtxOffset > 0' to allow large meshes. Set when 'ImGuiBackendFlags_RendererHasVtxOffset' is enabled.
 };
@@ -3452,9 +3459,9 @@ struct ImDrawList
 
     // Advanced: Draw Callbacks
     // - May be used to alter render state (change sampler, blending, current shader). May be used to emit custom rendering commands (difficult to do correctly, but possible).
-    // - Use special ImDrawCallback_ResetRenderState callback to instruct backends to reset its render state to the default.
+    // - Use special ImDrawCallback_ResetRenderState callback to instruct backend to reset its render state to the default.
     // - Your rendering loop must check for 'UserCallback' in ImDrawCmd and call the function instead of rendering triangles. All standard backends are honoring this.
-    // - For some backends, the callback may access selected render-states exposed by the backends in a ImGui_ImplXXXX_RenderState structure pointed to by platform_io.Renderer_RenderState.
+    // - For some backends, the callback may access selected render-states exposed by the backend in a ImGui_ImplXXXX_RenderState structure pointed to by platform_io.Renderer_RenderState.
     // - IMPORTANT: please be mindful of the different level of indirection between using size==0 (copying argument) and using size>0 (copying pointed data into a buffer).
     //   - If userdata_size == 0: we copy/store the 'userdata' argument as-is. It will be available unmodified in ImDrawCmd::UserCallbackData during render.
     //   - If userdata_size > 0,  we copy/store 'userdata_size' bytes pointed to by 'userdata'. We store them in a buffer stored inside the drawlist. ImDrawCmd::UserCallbackData will point inside that buffer so you have to retrieve data from there. Your callback may need to use ImDrawCmd::UserCallbackDataSize if you expect dynamically-sized data.
@@ -3560,9 +3567,9 @@ enum ImTextureStatus
 {
     ImTextureStatus_OK,
     ImTextureStatus_Destroyed,      // Backend destroyed the texture.
-    ImTextureStatus_WantCreate,     // Requesting backends to create the texture. Set status OK when done.
-    ImTextureStatus_WantUpdates,    // Requesting backends to update specific blocks of pixels (write to texture portions which have never been used before). Set status OK when done.
-    ImTextureStatus_WantDestroy,    // Requesting backends to destroy the texture. Set status to Destroyed when done.
+    ImTextureStatus_WantCreate,     // Requesting backend to create the texture. Set status OK when done.
+    ImTextureStatus_WantUpdates,    // Requesting backend to update specific blocks of pixels (write to texture portions which have never been used before). Set status OK when done.
+    ImTextureStatus_WantDestroy,    // Requesting backend to destroy the texture. Set status to Destroyed when done.
 };
 
 // Coordinates of a rectangle within a texture.
@@ -3578,16 +3585,16 @@ struct ImTextureRect
 // This is only useful for (1) core library and (2) backends. End-user/applications do not need to care about this.
 // Renderer Backends will create a GPU-side version of this.
 // Why does we store two identifiers: TexID and BackendUserData?
-// - ImTextureID    TexID           = lower-level identifier stored in ImDrawCmd. ImDrawCmd can refer to textures not created by the backends, and for which there's no ImTextureData.
-// - void*          BackendUserData = higher-level opaque storage for backends own book-keeping. Some backends may have enough with TexID and not need both.
- // In columns below: who reads/writes each fields? 'r'=read, 'w'=write, 'core'=main library, 'backends'=renderer backends
+// - ImTextureID    TexID           = lower-level identifier stored in ImDrawCmd. ImDrawCmd can refer to textures not created by the backend, and for which there's no ImTextureData.
+// - void*          BackendUserData = higher-level opaque storage for backend own book-keeping. Some backends may have enough with TexID and not need both.
+ // In columns below: who reads/writes each fields? 'r'=read, 'w'=write, 'core'=main library, 'backend'=renderer backend
 struct ImTextureData
 {
-    //------------------------------------------ core / backends ---------------------------------------
+    //------------------------------------------ core / backend ---------------------------------------
     int                 UniqueID;               // w    -   // [DEBUG] Sequential index to facilitate identifying a texture when debugging/printing. Unique per atlas.
     ImTextureStatus     Status;                 // rw   rw  // ImTextureStatus_OK/_WantCreate/_WantUpdates/_WantDestroy. Always use SetStatus() to modify!
-    void*               BackendUserData;        // -    rw  // Convenience storage for backends. Some backends may have enough with TexID.
-    ImTextureID         TexID;                  // r    w   // Backend-specific texture identifier. Always use SetTexID() to modify! The identifier will stored in ImDrawCmd::GetTexID() and passed to backends's RenderDrawData function.
+    void*               BackendUserData;        // -    rw  // Convenience storage for backend. Some backends may have enough with TexID.
+    ImTextureID         TexID;                  // r    w   // Backend-specific texture identifier. Always use SetTexID() to modify! The identifier will stored in ImDrawCmd::GetTexID() and passed to backend's RenderDrawData function.
     ImTextureFormat     Format;                 // w    r   // ImTextureFormat_RGBA32 (default) or ImTextureFormat_Alpha8
     int                 Width;                  // w    r   // Texture width
     int                 Height;                 // w    r   // Texture height
@@ -3596,8 +3603,8 @@ struct ImTextureData
     ImTextureRect       UsedRect;               // w    r   // Bounding box encompassing all past and queued Updates[].
     ImTextureRect       UpdateRect;             // w    r   // Bounding box encompassing all queued Updates[].
     ImVector<ImTextureRect> Updates;            // w    r   // Array of individual updates.
-    int                 UnusedFrames;           // w    r   // In order to facilitate handling Status==WantDestroy in some backends: this is a count successive frames where the texture was not used. Always >0 when Status==WantDestroy.
-    unsigned short      RefCount;               // w    r   // Number of contexts using this texture. Used during backends shutdown.
+    int                 UnusedFrames;           // w    r   // In order to facilitate handling Status==WantDestroy in some backend: this is a count successive frames where the texture was not used. Always >0 when Status==WantDestroy.
+    unsigned short      RefCount;               // w    r   // Number of contexts using this texture. Used during backend shutdown.
     bool                UseColors;              // w    r   // Tell whether our texture data is known to use colors (rather than just white + alpha).
     bool                WantDestroyNextFrame;   // rw   -   // [Internal] Queued to set ImTextureStatus_WantDestroy next frame. May still be used in the current frame.
 
@@ -3613,9 +3620,9 @@ struct ImTextureData
     ImTextureRef        GetTexRef()                 { ImTextureRef tex_ref; tex_ref._TexData = this; tex_ref._TexID = ImTextureID_Invalid; return tex_ref; }
     ImTextureID         GetTexID() const            { return TexID; }
 
-    // Called by Renderer backends
+    // Called by Renderer backend
     // - Call SetTexID() and SetStatus() after honoring texture requests. Never modify TexID and Status directly!
-    // - A backends may decide to destroy a texture that we did not request to destroy, which is fine (e.g. freeing resources), but we immediately set the texture back in _WantCreate mode.
+    // - A backend may decide to destroy a texture that we did not request to destroy, which is fine (e.g. freeing resources), but we immediately set the texture back in _WantCreate mode.
     void    SetTexID(ImTextureID tex_id)            { TexID = tex_id; }
     void    SetStatus(ImTextureStatus status)       { Status = status; if (status == ImTextureStatus_Destroyed && !WantDestroyNextFrame) Status = ImTextureStatus_WantCreate; }
 };
@@ -3657,7 +3664,7 @@ struct ImFontConfig
     // [Internal]
     ImFontFlags     Flags;                  // Font flags (don't use just yet, will be exposed in upcoming 1.92.X updates)
     ImFont*         DstFont;                // Target font (as we merging fonts, multiple ImFontConfig may target the same font)
-    const ImFontLoader* FontLoader;         // Custom font backends for this source (default source is the one stored in ImFontAtlas)
+    const ImFontLoader* FontLoader;         // Custom font backend for this source (default source is the one stored in ImFontAtlas)
     void*           FontLoaderData;         // Font loader opaque storage (per font config)
 
     IMGUI_API ImFontConfig();
@@ -3726,7 +3733,7 @@ enum ImFontAtlasFlags_
 //  - Custom graphics data needed to render the shapes needed by Dear ImGui.
 //  - Mouse cursor shapes for software cursor rendering (unless setting 'Flags |= ImFontAtlasFlags_NoMouseCursors' in the font atlas).
 //  - If you don't call any AddFont*** functions, the default font embedded in the code will be loaded for you.
-// It is the rendering backends responsibility to upload texture into your graphics API:
+// It is the rendering backend responsibility to upload texture into your graphics API:
 //  - ImGui_ImplXXXX_RenderDrawData() functions generally iterate platform_io->Textures[] to create/update/destroy each ImTextureData instance.
 //  - Backend then set ImTextureData's TexID and BackendUserData.
 //  - Texture id are passed back to you during rendering to identify the texture. Read FAQ entry about ImTextureID/ImTextureRef for more details.
@@ -3769,20 +3776,20 @@ struct ImFontAtlas
     //   the texture (e.g. when using the AddCustomRect*** api), then the RGB pixels emitted will always be white (~75% of memory/bandwidth waste).
     // - From 1.92 with backends supporting ImGuiBackendFlags_RendererHasTextures:
     //   - Calling Build(), GetTexDataAsAlpha8(), GetTexDataAsRGBA32() is not needed.
-    //   - In backends: replace calls to ImFontAtlas::SetTexID() with calls to ImTextureData::SetTexID() after honoring texture creation.
+    //   - In backend: replace calls to ImFontAtlas::SetTexID() with calls to ImTextureData::SetTexID() after honoring texture creation.
     IMGUI_API bool  Build();                    // Build pixels data. This is called automatically for you by the GetTexData*** functions.
     IMGUI_API void  GetTexDataAsAlpha8(unsigned char** out_pixels, int* out_width, int* out_height, int* out_bytes_per_pixel = NULL); // 1 byte per-pixel
     IMGUI_API void  GetTexDataAsRGBA32(unsigned char** out_pixels, int* out_width, int* out_height, int* out_bytes_per_pixel = NULL); // 4 bytes-per-pixel
     void            SetTexID(ImTextureID id)    { IM_ASSERT(TexRef._TexID == ImTextureID_Invalid); TexRef._TexData->TexID = id; }                               // Called by legacy backends. May be called before texture creation.
     void            SetTexID(ImTextureRef id)   { IM_ASSERT(TexRef._TexID == ImTextureID_Invalid && id._TexData == NULL); TexRef._TexData->TexID = id._TexID; } // Called by legacy backends.
-    bool            IsBuilt() const { return Fonts.Size > 0 && TexIsBuilt; } // Bit ambiguous: used to detect when user didn't build texture but effectively we should check TexID != 0 except that would be backends dependent..
+    bool            IsBuilt() const { return Fonts.Size > 0 && TexIsBuilt; } // Bit ambiguous: used to detect when user didn't build texture but effectively we should check TexID != 0 except that would be backend dependent..
 #endif
 
     //-------------------------------------------
     // Glyph Ranges
     //-------------------------------------------
 
-    // Since 1.92: specifying glyph ranges is only useful/necessary if your backends doesn't support ImGuiBackendFlags_RendererHasTextures!
+    // Since 1.92: specifying glyph ranges is only useful/necessary if your backend doesn't support ImGuiBackendFlags_RendererHasTextures!
     IMGUI_API const ImWchar*    GetGlyphRangesDefault();                // Basic Latin, Extended Latin
 #ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     // Helpers to retrieve list of common Unicode ranges (2 value per range, values are inclusive, zero-terminated list)
@@ -3853,7 +3860,7 @@ struct ImFontAtlas
     bool                        Locked;             // Marked as locked during ImGui::NewFrame()..EndFrame() scope if TexUpdates are not supported. Any attempt to modify the atlas will assert.
     bool                        RendererHasTextures;// Copy of (BackendFlags & ImGuiBackendFlags_RendererHasTextures) from supporting context.
     bool                        TexIsBuilt;         // Set when texture was built matching current font input. Mostly useful for legacy IsBuilt() call.
-    bool                        TexPixelsUseColors; // Tell whether our texture data is known to use colors (rather than just alpha channel), in order to help backends select a format or conversion process.
+    bool                        TexPixelsUseColors; // Tell whether our texture data is known to use colors (rather than just alpha channel), in order to help backend select a format or conversion process.
     ImVec2                      TexUvScale;         // = (1.0f/TexData->TexWidth, 1.0f/TexData->TexHeight). May change as new texture gets created.
     ImVec2                      TexUvWhitePixel;    // Texture coordinates to a white pixel. May change as new texture gets created.
     ImVector<ImFont*>           Fonts;              // Hold all the fonts returned by AddFont*. Fonts[0] is the default font upon calling ImGui::NewFrame(), use ImGui::PushFont()/PopFont() to change the current font.
@@ -3865,7 +3872,7 @@ struct ImFontAtlas
     ImFontAtlasBuilder*         Builder;            // Opaque interface to our data that doesn't need to be public and may be discarded when rebuilding.
     const ImFontLoader*         FontLoader;         // Font loader opaque interface (default to use FreeType when IMGUI_ENABLE_FREETYPE is defined, otherwise default to use stb_truetype). Use SetFontLoader() to change this at runtime.
     const char*                 FontLoaderName;     // Font loader name (for display e.g. in About box) == FontLoader->Name
-    void*                       FontLoaderData;     // Font backends opaque storage
+    void*                       FontLoaderData;     // Font backend opaque storage
     unsigned int                FontLoaderFlags;    // Shared flags (for all fonts) for font loader. THIS IS BUILD IMPLEMENTATION DEPENDENT (e.g. Per-font override is also available in ImFontConfig).
     int                         RefCount;           // Number of contexts using this atlas
     ImGuiContext*               OwnerContext;       // Context which own the atlas will be in charge of updating and destroying it.
@@ -3994,7 +4001,7 @@ inline ImTextureID ImTextureRef::GetTexID() const
 // Using an indirection to avoid patching ImDrawCmd after a SetTexID() call (but this could be an alternative solution too)
 inline ImTextureID ImDrawCmd::GetTexID() const
 {
-    // If you are getting this assert: A renderer backends with support for ImGuiBackendFlags_RendererHasTextures (1.92)
+    // If you are getting this assert: A renderer backend with support for ImGuiBackendFlags_RendererHasTextures (1.92)
     // must iterate and handle ImTextureData requests stored in ImDrawData::Textures[].
     ImTextureID tex_id = TexRef._TexData ? TexRef._TexData->TexID : TexRef._TexID; // == TexRef.GetTexID() above.
     if (TexRef._TexData != NULL)
@@ -4012,7 +4019,7 @@ enum ImGuiViewportFlags_
     ImGuiViewportFlags_None                     = 0,
     ImGuiViewportFlags_IsPlatformWindow         = 1 << 0,   // Represent a Platform Window
     ImGuiViewportFlags_IsPlatformMonitor        = 1 << 1,   // Represent a Platform Monitor (unused yet)
-    ImGuiViewportFlags_OwnedByApp               = 1 << 2,   // Platform Window: Is created/managed by the user application? (rather than our backends)
+    ImGuiViewportFlags_OwnedByApp               = 1 << 2,   // Platform Window: Is created/managed by the user application? (rather than our backend)
     ImGuiViewportFlags_NoDecoration             = 1 << 3,   // Platform Window: Disable platform decorations: title bar, borders, etc. (generally set all windows, but if ImGuiConfigFlags_ViewportsDecoration is set we only set this on popups/tooltips)
     ImGuiViewportFlags_NoTaskBarIcon            = 1 << 4,   // Platform Window: Disable platform task bar icon (generally set on popups/tooltips, or all windows if ImGuiConfigFlags_ViewportsNoTaskBarIcon is set)
     ImGuiViewportFlags_NoFocusOnAppearing       = 1 << 5,   // Platform Window: Don't take focus when created.
@@ -4045,18 +4052,18 @@ struct ImGuiViewport
     ImVec2              WorkPos;                // Work Area: Position of the viewport minus task bars, menus bars, status bars (>= Pos)
     ImVec2              WorkSize;               // Work Area: Size of the viewport minus task bars, menu bars, status bars (<= Size)
     float               DpiScale;               // 1.0f = 96 DPI = No extra scale.
-    ImGuiID             ParentViewportId;       // (Advanced) 0: no parent. Instruct the platform backends to setup a parent/child relationship between platform windows.
+    ImGuiID             ParentViewportId;       // (Advanced) 0: no parent. Instruct the platform backend to setup a parent/child relationship between platform windows.
     ImGuiViewport*      ParentViewport;         // (Advanced) Direct shortcut to ImGui::FindViewportByID(ParentViewportId). NULL: no parent.
     ImDrawData*         DrawData;               // The ImDrawData corresponding to this viewport. Valid after Render() and until the next call to NewFrame().
 
     // Platform/Backend Dependent Data
     // Our design separate the Renderer and Platform backends to facilitate combining default backends with each others.
-    // When our create your own backends for a custom engine, it is possible that both Renderer and Platform will be handled
+    // When our create your own backend for a custom engine, it is possible that both Renderer and Platform will be handled
     // by the same system and you may not need to use all the UserData/Handle fields.
-    // The library never uses those fields, they are merely storage to facilitate backends implementation.
+    // The library never uses those fields, they are merely storage to facilitate backend implementation.
     void*               RendererUserData;       // void* to hold custom data structure for the renderer (e.g. swap chain, framebuffers etc.). generally set by your Renderer_CreateWindow function.
     void*               PlatformUserData;       // void* to hold custom data structure for the OS / platform (e.g. windowing info, render context). generally set by your Platform_CreateWindow function.
-    void*               PlatformHandle;         // void* to hold higher-level, platform window handle (e.g. HWND for Win32 backends, Uint32 WindowID for SDL, GLFWWindow* for GLFW), for FindViewportByPlatformHandle().
+    void*               PlatformHandle;         // void* to hold higher-level, platform window handle (e.g. HWND for Win32 backend, Uint32 WindowID for SDL, GLFWWindow* for GLFW), for FindViewportByPlatformHandle().
     void*               PlatformHandleRaw;      // void* to hold lower-level, platform-native window handle (always HWND on Win32 platform, unused for other platforms).
     bool                PlatformWindowCreated;  // Platform window has been created (Platform_CreateWindow() has been called). This is false during the first frame where a viewport is being created.
     bool                PlatformRequestMove;    // Platform window requested move (e.g. window was moved by the OS / host window manager, authoritative position will be OS window position)
@@ -4080,7 +4087,7 @@ struct ImGuiViewport
 //
 // This feature allows you to seamlessly drag Dear ImGui windows outside of your application viewport.
 // This is achieved by creating new Platform/OS windows on the fly, and rendering into them.
-// Dear ImGui manages the viewport structures, and the backends create and maintain one Platform/OS window for each of those viewports.
+// Dear ImGui manages the viewport structures, and the backend create and maintain one Platform/OS window for each of those viewports.
 //
 // See Recap:   https://github.com/ocornut/imgui/wiki/Multi-Viewports
 // See Glossary https://github.com/ocornut/imgui/wiki/Glossary for details about some of the terminology.
@@ -4090,13 +4097,13 @@ struct ImGuiViewport
 // - So e.g. ImGui::SetNextWindowPos(ImVec2(0,0)) will position a window relative to your primary monitor!
 // - If you want to position windows relative to your main application viewport, use ImGui::GetMainViewport()->Pos as a base position.
 //
-// Steps to use multi-viewports in your application, when using a default backends from the examples/ folder:
+// Steps to use multi-viewports in your application, when using a default backend from the examples/ folder:
 // - Application:  Enable feature with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
-// - Backend:      The backends initialization will setup all necessary ImGuiPlatformIO's functions and update monitors info every frame.
+// - Backend:      The backend initialization will setup all necessary ImGuiPlatformIO's functions and update monitors info every frame.
 // - Application:  In your main loop, call ImGui::UpdatePlatformWindows(), ImGui::RenderPlatformWindowsDefault() after EndFrame() or Render().
 // - Application:  Fix absolute coordinates used in ImGui::SetWindowPos() or ImGui::SetNextWindowPos() calls.
 //
-// Steps to use multi-viewports in your application, when using a custom backends:
+// Steps to use multi-viewports in your application, when using a custom backend:
 // - Important:    THIS IS NOT EASY TO DO and comes with many subtleties not described here!
 //                 It's also an experimental feature, so some of the requirements may evolve.
 //                 Consider using default backends if you can. Either way, carefully follow and refer to examples/ backends for details.
@@ -4127,7 +4134,7 @@ struct ImGuiPlatformIO
     IMGUI_API ImGuiPlatformIO();
 
     //------------------------------------------------------------------
-    // Input - Interface with OS and Platform backends (most common stuff)
+    // Input - Interface with OS and Platform backend (most common stuff)
     //------------------------------------------------------------------
 
     // Optional: Access OS clipboard
@@ -4174,7 +4181,7 @@ struct ImGuiPlatformIO
     //   D = ImGui::DestroyPlatformWindows()          ~ shutdown
     // The general idea is that NewFrame() we will read the current Platform/OS state, and UpdatePlatformWindows() will write to it.
 
-    // The handlers are designed so we can mix and match two imgui_impl_xxxx files, one Platform backends and one Renderer backends.
+    // The handlers are designed so we can mix and match two imgui_impl_xxxx files, one Platform backend and one Renderer backend.
     // Custom engine backends will often provide both Platform and Renderer interfaces together and so may not need to use all functions.
     // Platform functions are typically called _before_ their Renderer counterpart, apart from Destroy which are called the other way.
 
@@ -4192,11 +4199,11 @@ struct ImGuiPlatformIO
     bool    (*Platform_GetWindowMinimized)(ImGuiViewport* vp);              // N . . . .  // Get platform window minimized state. When minimized, we generally won't attempt to get/set size and contents will be culled more easily
     void    (*Platform_SetWindowTitle)(ImGuiViewport* vp, const char* str); // . . U . .  // Set platform window title (given an UTF-8 string)
     void    (*Platform_SetWindowAlpha)(ImGuiViewport* vp, float alpha);     // . . U . .  // (Optional) Setup global transparency (not per-pixel transparency)
-    void    (*Platform_UpdateWindow)(ImGuiViewport* vp);                    // . . U . .  // (Optional) Called by UpdatePlatformWindows(). Optional hook to allow the platform backends from doing general book-keeping every frame.
+    void    (*Platform_UpdateWindow)(ImGuiViewport* vp);                    // . . U . .  // (Optional) Called by UpdatePlatformWindows(). Optional hook to allow the platform backend from doing general book-keeping every frame.
     void    (*Platform_RenderWindow)(ImGuiViewport* vp, void* render_arg);  // . . . R .  // (Optional) Main rendering (platform side! This is often unused, or just setting a "current" context for OpenGL bindings). 'render_arg' is the value passed to RenderPlatformWindowsDefault().
     void    (*Platform_SwapBuffers)(ImGuiViewport* vp, void* render_arg);   // . . . R .  // (Optional) Call Present/SwapBuffers (platform side! This is often unused!). 'render_arg' is the value passed to RenderPlatformWindowsDefault().
     float   (*Platform_GetWindowDpiScale)(ImGuiViewport* vp);               // N . . . .  // (Optional) [BETA] FIXME-DPI: DPI handling: Return DPI scale for this viewport. 1.0f = 96 DPI.
-    void    (*Platform_OnChangedViewport)(ImGuiViewport* vp);               // . F . . .  // (Optional) [BETA] FIXME-DPI: DPI handling: Called during Begin() every time the viewport we are outputting into changes, so backends has a chance to swap fonts to adjust style.
+    void    (*Platform_OnChangedViewport)(ImGuiViewport* vp);               // . F . . .  // (Optional) [BETA] FIXME-DPI: DPI handling: Called during Begin() every time the viewport we are outputting into changes, so backend has a chance to swap fonts to adjust style.
     ImVec4  (*Platform_GetWindowWorkAreaInsets)(ImGuiViewport* vp);         // N . . . .  // (Optional) [BETA] Get initial work area inset for the viewport (won't be covered by main menu bar, dockspace over viewport etc.). Default to (0,0),(0,0). 'safeAreaInsets' in iOS land, 'DisplayCutout' in Android land.
     int     (*Platform_CreateVkSurface)(ImGuiViewport* vp, ImU64 vk_inst, const void* vk_allocators, ImU64* out_vk_surface); // (Optional) For a Vulkan Renderer to call into Platform code (since the surface creation needs to tie them both).
 
@@ -4208,7 +4215,7 @@ struct ImGuiPlatformIO
     void    (*Renderer_SwapBuffers)(ImGuiViewport* vp, void* render_arg);   // . . . R .  // (Optional) Call Present/SwapBuffers. 'render_arg' is the value passed to RenderPlatformWindowsDefault().
 
     // (Optional) Monitor list
-    // - Updated by: app/backends. Update every frame to dynamically support changing monitor or DPI configuration.
+    // - Updated by: app/backend. Update every frame to dynamically support changing monitor or DPI configuration.
     // - Used by: dear imgui to query DPI info, clamp popups/tooltips within same monitor and not have them straddle monitors.
     ImVector<ImGuiPlatformMonitor>  Monitors;
 
@@ -4217,7 +4224,7 @@ struct ImGuiPlatformIO
     //------------------------------------------------------------------
 
     // Textures list (the list is updated by calling ImGui::EndFrame or ImGui::Render)
-    // The ImGui_ImplXXXX_RenderDrawData() function of each backends generally access this via ImDrawData::Textures which points to this. The array is available here mostly because backends will want to destroy textures on shutdown.
+    // The ImGui_ImplXXXX_RenderDrawData() function of each backend generally access this via ImDrawData::Textures which points to this. The array is available here mostly because backends will want to destroy textures on shutdown.
     ImVector<ImTextureData*>        Textures;           // List of textures used by Dear ImGui (most often 1) + contents of external texture list is automatically appended into this.
 
     // Viewports list (the list is updated by calling ImGui::EndFrame or ImGui::Render)
@@ -4298,7 +4305,7 @@ namespace ImGui
     //static inline void  CaptureKeyboardFromApp(bool want_capture_keyboard = true)                   { SetNextFrameWantCaptureKeyboard(want_capture_keyboard); } // Renamed as name was misleading + removed default value.
     //static inline void  CaptureMouseFromApp(bool want_capture_mouse = true)                         { SetNextFrameWantCaptureMouse(want_capture_mouse); }       // Renamed as name was misleading + removed default value.
     //-- OBSOLETED in 1.87 (from February 2022, more formally obsoleted April 2024)
-    //IMGUI_API ImGuiKey  GetKeyIndex(ImGuiKey key);                                                  { IM_ASSERT(key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END); const ImGuiKeyData* key_data = GetKeyData(key); return (ImGuiKey)(key_data - g.IO.KeysData); } // Map ImGuiKey_* values into legacy native key index. == io.KeyMap[key]. When using a 1.87+ backends using io.AddKeyEvent(), calling GetKeyIndex() with ANY ImGuiKey_XXXX values will return the same value!
+    //IMGUI_API ImGuiKey  GetKeyIndex(ImGuiKey key);                                                  { IM_ASSERT(key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END); const ImGuiKeyData* key_data = GetKeyData(key); return (ImGuiKey)(key_data - g.IO.KeysData); } // Map ImGuiKey_* values into legacy native key index. == io.KeyMap[key]. When using a 1.87+ backend using io.AddKeyEvent(), calling GetKeyIndex() with ANY ImGuiKey_XXXX values will return the same value!
     //static inline ImGuiKey GetKeyIndex(ImGuiKey key)                                                { IM_ASSERT(key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END); return key; }
     //-- OBSOLETED in 1.86 (from November 2021)
     //IMGUI_API void      CalcListClipping(int items_count, float items_height, int* out_items_display_start, int* out_items_display_end); // Code removed, see 1.90 for last version of the code. Calculate range of visible items for large list of evenly sized items. Prefer using ImGuiListClipper.

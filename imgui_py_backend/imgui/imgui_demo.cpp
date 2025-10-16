@@ -1,4 +1,4 @@
-// dear imgui, v1.92.4 WIP
+// dear imgui, v1.92.4
 // (demo code)
 
 // Help:
@@ -480,7 +480,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableKeyboard",    &io.ConfigFlags, ImGuiConfigFlags_NavEnableKeyboard);
             ImGui::SameLine(); HelpMarker("Enable keyboard controls.");
             ImGui::CheckboxFlags("io.ConfigFlags: NavEnableGamepad",     &io.ConfigFlags, ImGuiConfigFlags_NavEnableGamepad);
-            ImGui::SameLine(); HelpMarker("Enable gamepad controls. Require backends to set io.BackendFlags |= ImGuiBackendFlags_HasGamepad.\n\nRead instructions in imgui.cpp for details.");
+            ImGui::SameLine(); HelpMarker("Enable gamepad controls. Require backend to set io.BackendFlags |= ImGuiBackendFlags_HasGamepad.\n\nRead instructions in imgui.cpp for details.");
             ImGui::CheckboxFlags("io.ConfigFlags: NoMouse",              &io.ConfigFlags, ImGuiConfigFlags_NoMouse);
             ImGui::SameLine(); HelpMarker("Instruct dear imgui to disable mouse inputs and interactions.");
 
@@ -498,7 +498,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
             }
 
             ImGui::CheckboxFlags("io.ConfigFlags: NoMouseCursorChange",  &io.ConfigFlags, ImGuiConfigFlags_NoMouseCursorChange);
-            ImGui::SameLine(); HelpMarker("Instruct backends to not alter mouse cursor shape and visibility.");
+            ImGui::SameLine(); HelpMarker("Instruct backend to not alter mouse cursor shape and visibility.");
             ImGui::CheckboxFlags("io.ConfigFlags: NoKeyboard", &io.ConfigFlags, ImGuiConfigFlags_NoKeyboard);
             ImGui::SameLine(); HelpMarker("Instruct dear imgui to disable keyboard inputs and interactions.");
 
@@ -630,9 +630,9 @@ void ImGui::ShowDemoWindow(bool* p_open)
         {
             HelpMarker(
                 "Those flags are set by the backends (imgui_impl_xxx files) to specify their capabilities.\n"
-                "Here we expose them as read-only fields to avoid breaking interactions with your backends.");
+                "Here we expose them as read-only fields to avoid breaking interactions with your backend.");
 
-            // Make a local copy to avoid modifying actual backends flags.
+            // Make a local copy to avoid modifying actual backend flags.
             // FIXME: Maybe we need a BeginReadonly() equivalent to keep label bright?
             ImGui::BeginDisabled();
             ImGui::CheckboxFlags("io.BackendFlags: HasGamepad",             &io.BackendFlags, ImGuiBackendFlags_HasGamepad);
@@ -1839,11 +1839,11 @@ static void DemoWindowWidgetsImages()
 
         // Below we are displaying the font texture because it is the only texture we have access to inside the demo!
         // Read description about ImTextureID/ImTextureRef and FAQ for details about texture identifiers.
-        // If you use one of the default imgui_impl_XXXX.cpp rendering backends, they all have comments at the top
+        // If you use one of the default imgui_impl_XXXX.cpp rendering backend, they all have comments at the top
         // of their respective source file to specify what they are using as texture identifier, for example:
         // - The imgui_impl_dx11.cpp renderer expect a 'ID3D11ShaderResourceView*' pointer.
         // - The imgui_impl_opengl3.cpp renderer expect a GLuint OpenGL texture identifier, etc.
-        // So with the DirectX11 backends, you call ImGui::Image() with a 'ID3D11ShaderResourceView*' cast to ImTextureID.
+        // So with the DirectX11 backend, you call ImGui::Image() with a 'ID3D11ShaderResourceView*' cast to ImTextureID.
         // - If you decided that ImTextureID = MyEngineTexture*, then you can pass your MyEngineTexture* pointers
         //   to ImGui::Image(), and gather width/height through your own functions, etc.
         // - You can use ShowMetricsWindow() to inspect the draw data that are being passed to your renderer,
@@ -4879,15 +4879,18 @@ static void DemoWindowLayout()
 
         ImGui::Checkbox("Decoration", &enable_extra_decorations);
 
+        ImGui::PushItemWidth(ImGui::GetFontSize() * 10);
+        enable_track |= ImGui::DragInt("##item", &track_item, 0.25f, 0, 99, "Item = %d");
+        ImGui::SameLine();
         ImGui::Checkbox("Track", &enable_track);
-        ImGui::PushItemWidth(100);
-        ImGui::SameLine(140); enable_track |= ImGui::DragInt("##item", &track_item, 0.25f, 0, 99, "Item = %d");
 
-        bool scroll_to_off = ImGui::Button("Scroll Offset");
-        ImGui::SameLine(140); scroll_to_off |= ImGui::DragFloat("##off", &scroll_to_off_px, 1.00f, 0, FLT_MAX, "+%.0f px");
+        bool scroll_to_off = ImGui::DragFloat("##off", &scroll_to_off_px, 1.00f, 0, FLT_MAX, "+%.0f px");
+        ImGui::SameLine();
+        scroll_to_off |= ImGui::Button("Scroll Offset");
 
-        bool scroll_to_pos = ImGui::Button("Scroll To Pos");
-        ImGui::SameLine(140); scroll_to_pos |= ImGui::DragFloat("##pos", &scroll_to_pos_px, 1.00f, -10, FLT_MAX, "X/Y = %.0f px");
+        bool scroll_to_pos = ImGui::DragFloat("##pos", &scroll_to_pos_px, 1.00f, -10, FLT_MAX, "X/Y = %.0f px");
+        ImGui::SameLine();
+        scroll_to_pos |= ImGui::Button("Scroll To Pos");
         ImGui::PopItemWidth();
 
         if (scroll_to_off || scroll_to_pos)
@@ -8034,7 +8037,7 @@ static void DemoWindowInputs()
             ImGui::SameLine(); HelpMarker(
                 "Your application can render a different mouse cursor based on what ImGui::GetMouseCursor() returns. "
                 "If software cursor rendering (io.MouseDrawCursor) is set ImGui will draw the right cursor for you, "
-                "otherwise your backends needs to handle it.");
+                "otherwise your backend needs to handle it.");
             for (int i = 0; i < ImGuiMouseCursor_COUNT; i++)
             {
                 char label[32];
@@ -8649,7 +8652,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
 
             Checkbox("Anti-aliased lines use texture", &style.AntiAliasedLinesUseTex);
             SameLine();
-            HelpMarker("Faster lines using texture data. Require backends to render with bilinear filtering (not point/nearest filtering).");
+            HelpMarker("Faster lines using texture data. Require backend to render with bilinear filtering (not point/nearest filtering).");
 
             Checkbox("Anti-aliased fill", &style.AntiAliasedFill);
             PushItemWidth(GetFontSize() * 8);
@@ -10245,37 +10248,27 @@ static void ShowExampleAppCustomRendering(bool* p_open)
 // [SECTION] Example App: Docking, DockSpace / ShowExampleAppDockSpace()
 //-----------------------------------------------------------------------------
 
-// Demonstrate using DockSpace() to create an explicit docking node within an existing window.
-// Note: You can use most Docking facilities without calling any API. You DO NOT need to call DockSpace() to use Docking!
-// - Drag from window title bar or their tab to dock/undock. Hold SHIFT to disable docking.
-// - Drag from window menu button (upper-left button) to undock an entire node (all windows).
-// - When io.ConfigDockingWithShift == true, you instead need to hold SHIFT to enable docking.
-// About dockspaces:
-// - Use DockSpace() to create an explicit dock node _within_ an existing window.
-// - Use DockSpaceOverViewport() to create an explicit dock node covering the screen or a specific viewport.
-//   This is often used with ImGuiDockNodeFlags_PassthruCentralNode.
-// - Important: Dockspaces need to be submitted _before_ any window they can host. Submit it early in your frame! (*)
-// - Important: Dockspaces need to be kept alive if hidden, otherwise windows docked into it will be undocked.
-//   e.g. if you have multiple tabs with a dockspace inside each tab: submit the non-visible dockspaces with ImGuiDockNodeFlags_KeepAliveOnly.
-// (*) because of this constraint, the implicit \"Debug\" window can not be docked into an explicit DockSpace() node,
-// because that window is submitted as part of the part of the NewFrame() call. An easy workaround is that you can create
-// your own implicit "Debug##2" window after calling DockSpace() and leave it in the window stack for anyone to use.
+// Demonstrate using DockSpace() to create an explicit docking node within an existing window, with various options.
+// THIS IS A DEMO FOR ADVANCED USAGE OF DockSpace().
+// MOST REGULAR APPLICATIONS WHO WANT TO ALLOW DOCKING WINDOWS ON THE EDGE OF YOUR SCREEN CAN SIMPLY USE:
+//    ImGui::NewFrame();
+//    ImGui::DockSpaceOverViewport(); // Create a dockspace in main viewport
+// OR:
+//    ImGui::NewFrame();
+//    ImGui::DockSpaceOverViewport(0, nullptr, ImGuiDockNodeFlags_PassthruCentralNode); // Create a dockspace in main viewport, where central node is transparent.
+// Read https://github.com/ocornut/imgui/wiki/Docking for details.
+// The reasons we do not use DockSpaceOverViewport() in this demo is because:
+// - (1) we allow the host window to be floating/moveable instead of filling the viewport (when opt_fullscreen == false)
+//       which is mostly to showcase the idea that DockSpace() may be submitted anywhere.
+// - (2) we allow the host window to have padding (when opt_padding == true)
+// - (3) we expose many flags and need a way to have them visible.
+// - (4) we have a local menu bar in the host window (vs. you could use BeginMainMenuBar() + DockSpaceOverViewport()
+//       in your code, but we don't here because we allow the window to be floating)
 void ShowExampleAppDockSpace(bool* p_open)
 {
-    // READ THIS !!!
     // TL;DR; this demo is more complicated than what most users you would normally use.
-    // If we remove all options we are showcasing, this demo would become:
-    //     void ShowExampleAppDockSpace()
-    //     {
-    //         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-    //     }
-    // In most cases you should be able to just call DockSpaceOverViewport() and ignore all the code below!
+    // If we remove all options we are showcasing, this demo would become a simple call to ImGui::DockSpaceOverViewport() !!
     // In this specific demo, we are not using DockSpaceOverViewport() because:
-    // - (1) we allow the host window to be floating/moveable instead of filling the viewport (when opt_fullscreen == false)
-    // - (2) we allow the host window to have padding (when opt_padding == true)
-    // - (3) we expose many flags and need a way to have them visible.
-    // - (4) we have a local menu bar in the host window (vs. you could use BeginMainMenuBar() + DockSpaceOverViewport()
-    //      in your code, but we don't here because we allow the window to be floating)
 
     static bool opt_fullscreen = true;
     static bool opt_padding = false;
@@ -10320,6 +10313,8 @@ void ShowExampleAppDockSpace(bool* p_open)
         ImGui::PopStyleVar(2);
 
     // Submit the DockSpace
+    // REMINDER: THIS IS A DEMO FOR ADVANCED USAGE OF DockSpace()!
+    // MOST REGULAR APPLICATIONS WILL SIMPLY WANT TO CALL DockSpaceOverViewport(). READ COMMENTS ABOVE.
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
     {
@@ -10331,6 +10326,7 @@ void ShowExampleAppDockSpace(bool* p_open)
         ShowDockingDisabledMessage();
     }
 
+    // Show demo options and help
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("Options"))
@@ -10353,16 +10349,23 @@ void ShowExampleAppDockSpace(bool* p_open)
                 *p_open = false;
             ImGui::EndMenu();
         }
-        HelpMarker(
-            "When docking is enabled, you can ALWAYS dock MOST window into another! Try it now!" "\n"
-            "- Drag from window title bar or their tab to dock/undock." "\n"
-            "- Drag from window menu button (upper-left button) to undock an entire node (all windows)." "\n"
-            "- Hold SHIFT to disable docking (if io.ConfigDockingWithShift == false, default)" "\n"
-            "- Hold SHIFT to enable docking (if io.ConfigDockingWithShift == true)" "\n"
-            "This demo app has nothing to do with enabling docking!" "\n\n"
-            "This demo app only demonstrate the use of ImGui::DockSpace() which allows you to manually create a docking node _within_ another window." "\n\n"
-            "Read comments in ShowExampleAppDockSpace() for more details.");
-
+        if (ImGui::BeginMenu("Help"))
+        {
+            ImGui::TextUnformatted(
+                "This demo has nothing to do with enabling docking!" "\n"
+                "This demo only demonstrate the use of ImGui::DockSpace() which allows you to manually\ncreate a docking node _within_ another window." "\n"
+                "Most application can simply call ImGui::DockSpaceOverViewport() and be done with it.");
+            ImGui::Separator();
+            ImGui::TextUnformatted("When docking is enabled, you can ALWAYS dock MOST window into another! Try it now!" "\n"
+                "- Drag from window title bar or their tab to dock/undock." "\n"
+                "- Drag from window menu button (upper-left button) to undock an entire node (all windows)." "\n"
+                "- Hold SHIFT to disable docking (if io.ConfigDockingWithShift == false, default)" "\n"
+                "- Hold SHIFT to enable docking (if io.ConfigDockingWithShift == true)");
+            ImGui::Separator();
+            ImGui::TextUnformatted("More details:"); ImGui::Bullet(); ImGui::SameLine(); ImGui::TextLinkOpenURL("Docking Wiki page", "https://github.com/ocornut/imgui/wiki/Docking");
+            ImGui::BulletText("Read comments in ShowExampleAppDockSpace()");
+            ImGui::EndMenu();
+        }
         ImGui::EndMenuBar();
     }
 
