@@ -13,14 +13,14 @@ if hasattr(os, 'add_dll_directory'):
 os.environ['PATH'] = str(_bin_dir) + os.pathsep + os.environ['PATH']
 
 # Now import the .pyd module normally
-from . import imgui_py_backend as _imgui
+from .imgui_py_backend import *
 
 # Re-export all public functions/classes
-for name in dir(_imgui):
+"""for name in dir(_imgui):
     if not name.startswith('_'):
-        globals()[name] = getattr(_imgui, name)
+        globals()[name] = getattr(_imgui, name)"""
 
-print("backend_imgui loaded successfully")
+print("imgui_py_backend loaded successfully")
 
 # Cleanup
-del _current_dir, _bin_dir, _imgui
+del _current_dir, _bin_dir

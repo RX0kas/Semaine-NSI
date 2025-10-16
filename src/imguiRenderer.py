@@ -1,6 +1,6 @@
 import glfw
 from src.returtle import Turtle
-import src.backend_imgui as imgui
+import src.imgui_py_backend as imgui
 
 class ImGuiRenderer:
     def __init__(self, window):
@@ -20,11 +20,9 @@ class ImGuiRenderer:
 
     def render(self):
         imgui.render()
-        pass
 
     def shutdown(self):
         imgui.shutdown()
-        pass
 
     def show_debug_window(self,deltaTime,camera):
         if self.__showDebug:

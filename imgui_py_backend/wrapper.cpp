@@ -122,7 +122,14 @@ std::pair<bool, std::array<float, 2>> slider_float2(const std::string& label,
     return {changed, {v[0], v[1]}};
 }
 
+// MainMenuBar
+bool beginMainMenuBar() {
+    return ImGui::BeginMainMenuBar();
+}
 
+void endMainMenuBar() {
+    ImGui::EndMainMenuBar();
+}
 
 // --- Module Python ---
 PYBIND11_MODULE(imgui_py_backend, m) {
@@ -142,10 +149,89 @@ PYBIND11_MODULE(imgui_py_backend, m) {
     m.def("collapsing_header", &collapsing_header, py::arg("label"), py::arg("flags") = 0);
     m.def("separator_text", &separator_text, py::arg("label"));
     m.def("checkbox", &checkbox, py::arg("label"), py::arg("value"));
-    m.def("slider_float", &slider_float, py::arg("label"), py::arg("value"),
-          py::arg("v_min"), py::arg("v_max"),
-          py::arg("format") = "%.3f", py::arg("flags") = 0);
-    m.def("slider_float2", &slider_float2, py::arg("label"), py::arg("value"),
-          py::arg("v_min"), py::arg("v_max"),
-          py::arg("format") = "%.3f", py::arg("flags") = 0);
+
+    // MainMenuBar
+    m.def("begin_main_menu_bar",&beginMainMenuBar);
+    m.def("end_main_menu_bar",&endMainMenuBar);
+
+    m.def("slider_float", [](const char* label, float v, float v_min, float v_max, const char* format = "%.3f") {
+        float val = v;
+        ImGui::SliderFloat(label, &val, v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("v"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%.3f");
+
+    m.def("slider_float2", [](const char* label, std::array<float, 2> values, float v_min, float v_max, const char* format = "%.3f") {
+        std::array<float, 2> val = values;
+        ImGui::SliderFloat2(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%.3f");
+
+    m.def("slider_float3", [](const char* label, std::array<float, 3> values, float v_min, float v_max, const char* format = "%.3f") {
+        std::array<float, 3> val = values;
+        ImGui::SliderFloat3(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%.3f");
+
+    m.def("slider_float4", [](const char* label, std::array<float, 4> values, float v_min, float v_max, const char* format = "%.3f") {
+        std::array<float, 4> val = values;
+        ImGui::SliderFloat4(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%.3f");
+
+    m.def("slider_int", [](const char* label, int v, int v_min, int v_max, const char* format = "%d") {
+        int val = v;
+        ImGui::SliderInt(label, &val, v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("v"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%d");
+
+    m.def("slider_int2", [](const char* label, std::array<int, 2> values, int v_min, int v_max, const char* format = "%d") {
+        std::array<int, 2> val = values;
+        ImGui::SliderInt2(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%d");
+
+    m.def("slider_int3", [](const char* label, std::array<int, 3> values, int v_min, int v_max, const char* format = "%d") {
+        std::array<int, 3> val = values;
+        ImGui::SliderInt3(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%d");
+
+    m.def("slider_int4", [](const char* label, std::array<int, 4> values, int v_min, int v_max, const char* format = "%d") {
+        std::array<int, 4> val = values;
+        ImGui::SliderInt4(label, val.data(), v_min, v_max, format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("v_min"), py::arg("v_max"), py::arg("format") = "%d");
+
+
+    // ==== Inputs ====
+    m.def("input_text", [](const char* label, const std::string& text, ImGuiInputTextFlags flags = 0) {
+        std::string buffer = text;
+        buffer.resize(256);
+        ImGui::InputText(label, buffer.data(), buffer.size(), flags);
+        return std::string(buffer.c_str());
+    }, py::arg("label"), py::arg("text"), py::arg("flags") = 0);
+
+    m.def("input_float", [](const char* label, float v, float step = 0.0f, float step_fast = 0.0f, const char* format = "%.3f") {
+        float val = v;
+        ImGui::InputFloat(label, &val, step, step_fast, format);
+        return val;
+    }, py::arg("label"), py::arg("v"), py::arg("step") = 0.0f, py::arg("step_fast") = 0.0f, py::arg("format") = "%.3f");
+
+    m.def("input_int", [](const char* label, int v, int step = 1, int step_fast = 100) {
+        int val = v;
+        ImGui::InputInt(label, &val, step, step_fast);
+        return val;
+    }, py::arg("label"), py::arg("v"), py::arg("step") = 1, py::arg("step_fast") = 100);
+
+    m.def("input_float2", [](const char* label, std::array<float, 2> values, const char* format = "%.3f") {
+        std::array<float, 2> val = values;
+        ImGui::InputFloat2(label, val.data(), format);
+        return val;
+    }, py::arg("label"), py::arg("values"), py::arg("format") = "%.3f");
+
+    m.def("input_int2", [](const char* label, std::array<int, 2> values) {
+        std::array<int, 2> val = values;
+        ImGui::InputInt2(label, val.data());
+        return val;
+    }, py::arg("label"), py::arg("values"));
 }
