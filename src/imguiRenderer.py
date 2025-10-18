@@ -39,6 +39,8 @@ class ImGuiRenderer:
             if imgui.collapsing_header("Application"):
                 imgui.text("DeltaTime: {}".format(round(deltaTime,3)))
                 imgui.text("FPS: {}".format(round(1/deltaTime,3)))
+            if imgui.collapsing_header("ImGui"):
+                imgui.draw_imgui_info_widget()
             if imgui.collapsing_header("Camera"):
                 pos = [camera.x,camera.y]
                 _, newPos = imgui.slider_float2("Position",pos,-5,5)

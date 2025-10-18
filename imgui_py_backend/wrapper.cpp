@@ -13,7 +13,6 @@ void init_imgui() {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     //io.ConfigViewportsNoAutoMerge = true;
@@ -31,7 +30,6 @@ void init_imgui() {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
-
     ImGui_ImplGlfw_InitForOpenGL(glfwGetCurrentContext(), true);
     ImGui_ImplOpenGL3_Init("#version 330");
 }
@@ -208,7 +206,7 @@ PYBIND11_MODULE(imgui_py_backend, m) {
         std::string buffer = text;
         buffer.resize(256);
         ImGui::InputText(label, buffer.data(), buffer.size(), flags);
-        return std::string(buffer.c_str());
+        return std::string(buffer);
     }, py::arg("label"), py::arg("text"), py::arg("flags") = 0);
 
     m.def("input_float", [](const char* label, float v, float step = 0.0f, float step_fast = 0.0f, const char* format = "%.3f") {
@@ -234,4 +232,37 @@ PYBIND11_MODULE(imgui_py_backend, m) {
         ImGui::InputInt2(label, val.data());
         return val;
     }, py::arg("label"), py::arg("values"));
+
+    // Image
+    m.def("image", [](uintptr_t texture_id, std::array<float, 2> size,
+                      std::array<float, 2> uv0 = {0.0f, 1.0f},
+                      std::array<float, 2> uv1 = {1.0f, 0.0f}) {
+        ImGui::Image(
+            texture_id,
+            ImVec2(size[0], size[1]),
+            ImVec2(uv0[0], uv0[1]),
+            ImVec2(uv1[0], uv1[1])
+        );
+    }, py::arg("texture_id"), py::arg("size"),
+       py::arg("uv0") = std::array<float, 2>{0.0f, 1.0f},
+       py::arg("uv1") = std::array<float, 2>{1.0f, 0.0f});
+
+    m.def("begin_child", [](const std::string& str_id) {
+        return ImGui::BeginChild(str_id.c_str());
+    }, py::arg("str_id"));
+
+    m.def("end_child", []() {
+        ImGui::EndChild();
+    });
+
+    m.def("draw_imgui_info_widget",[] {
+        ImGui::Text("ImGui version: %s",IMGUI_VERSION);
+        bool iht = ImGuiBackendFlags_RendererHasTextures;
+        ImGui::Checkbox("IMGUI_HAS_TEXTURES",&iht);
+        bool ihv = ImGuiBackendFlags_RendererHasViewports;
+        ImGui::Checkbox("IMGUI_HAS_VIEWPORT",&ihv);
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        bool ihd = io.ConfigFlags & ImGuiConfigFlags_DockingEnable;
+        ImGui::Checkbox("IMGUI_HAS_DOCK",&ihd);
+    });
 }

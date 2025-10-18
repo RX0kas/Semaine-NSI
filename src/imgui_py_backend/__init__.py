@@ -15,10 +15,6 @@ os.environ['PATH'] = str(_bin_dir) + os.pathsep + os.environ['PATH']
 # Now import the .pyd module normally
 from .imgui_py_backend import *
 
-# Re-export all public functions/classes
-"""for name in dir(_imgui):
-    if not name.startswith('_'):
-        globals()[name] = getattr(_imgui, name)"""
 
 print("imgui_py_backend loaded successfully")
 
