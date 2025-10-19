@@ -120,5 +120,5 @@ class Shader:
     def setVec3f(self, name: str, v0: float, v1: float, v2: float):
         glUniform3f(glGetUniformLocation(self.__program, name), v0, v1, v2)
 
-    def setMat3f(self,name:str,matrix):
-        glUniformMatrix3fv(glGetUniformLocation(self.__program, name),1,GL_FALSE,matrix)
+    def setMat3f(self,name:str,matrix,transpose:bool=False):
+        glUniformMatrix3fv(glGetUniformLocation(self.__program, name),1,GL_TRUE if transpose else GL_FALSE,matrix)
