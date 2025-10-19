@@ -1,8 +1,6 @@
 #version 330 core
 in vec2 a_position;
 
-uniform float zoom;
-uniform vec2 center;
 uniform mat3 viewmatrix;
 
 void main()

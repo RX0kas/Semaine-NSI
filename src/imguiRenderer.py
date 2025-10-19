@@ -47,4 +47,8 @@ class ImGuiRenderer:
                 camera.x = newPos[0]
                 camera.y = newPos[1]
                 camera.zoom = imgui.slider_float("Zoom",camera.zoom,0.5,10)
+                camera.zoom_speed = imgui.slider_float("ZoomSpeed",camera.zoom_speed,0.1,10)
+                camera.move_speed = imgui.slider_float("MoveSpeed",camera.move_speed,0.1,100)
+                camera.smooth_damping = imgui.slider_float("SmoothDamping",camera.smooth_damping,0.1,1)
+
             imgui.end()

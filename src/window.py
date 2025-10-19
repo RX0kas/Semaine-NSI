@@ -1,38 +1,42 @@
+import time
+
 from glfw import *
 from OpenGL.GL import *
+from src.camera import Camera
 
+dragging = False
+last_mouse = None
+last_time = time.time()
 
 def on_resize(window, width, height):
-    """
-    Callback appelée automatiquement lorsque la fenêtre est redimensionnée.
-
-    Elle ajuste le viewport OpenGL et la matrice de projection afin
-    que l'affichage conserve les proportions correctes.
-
-    :param window: la fenêtre GLFW qui a été redimensionnée
-    :param width: nouvelle largeur de la fenêtre
-    :param height: nouvelle hauteur de la fenêtre
-    """
     # Définir la zone de rendu (viewport) sur toute la surface de la fenêtre
     glViewport(0, 0, width, height)
 
-    # Passer en mode projection (choix de la caméra/coordonnées)
-    #glMatrixMode(GL_PROJECTION)
-    #glLoadIdentity()
-#
-    ## Calculer le ratio largeur/hauteur
-    #aspect = width / height
-#
-    ## Définir une projection orthographique qui conserve les proportions
-    #if aspect >= 1:
-    #    # Fenêtre plus large que haute → élargir les limites en X
-    #    glOrtho(-aspect, aspect, -1, 1, -1, 1)
-    #else:
-    #    # Fenêtre plus haute que large → élargir les limites en Y
-    #    glOrtho(-1, 1, -1 / aspect, 1 / aspect, -1, 1)
-#
-    ## Revenir en mode "modèle-vue" (où l'on place les objets dans la scène)
-    #glMatrixMode(GL_MODELVIEW)
+    c = Camera.instance()
+    if c is not None: c.set_window_size(width, height)
+
+def scroll_callback(window, xoffset, yoffset):
+    mx, my = get_cursor_pos(window)
+    w, h = get_window_size(window)
+    Camera.instance().on_scroll(xoffset, yoffset, (mx, my), (w, h))
+
+def mouse_button_callback(window, button, action, mods):
+    global dragging, last_mouse
+    if button == MOUSE_BUTTON_MIDDLE:
+        dragging = (action == PRESS)
+        if dragging:
+            last_mouse = get_cursor_pos(window)
+
+def cursor_pos_callback(window, xpos, ypos):
+    global last_mouse
+    now = time.time()
+    dt = now - Camera.instance()._last_time  # delta temps réel
+    if dragging and last_mouse is not None:
+        dx = xpos - last_mouse[0]
+        dy = ypos - last_mouse[1]
+        w, h = get_window_size(window)
+        Camera.instance().on_drag(dx, dy, (w, h), dt)
+        last_mouse = (xpos, ypos)
 
 
 class Window:
@@ -72,6 +76,9 @@ class Window:
 
         # Associer la fonction de callback au redimensionnement
         set_window_size_callback(self.__window, on_resize)
+        set_scroll_callback(self.__window,scroll_callback)
+        set_mouse_button_callback(self.__window, mouse_button_callback)
+        set_cursor_pos_callback(self.__window, cursor_pos_callback)
 
         # Configurer la vue initiale
         on_resize(self.__window, width, height)

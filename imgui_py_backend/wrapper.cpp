@@ -97,27 +97,27 @@ void separator_text(const std::string& label) {
     ImGui::SeparatorText(label.c_str());
 }
 
-std::pair<bool, bool> checkbox(const std::string& label, bool value) {
+bool checkbox(const std::string& label, bool value) {
     bool v = value;
     bool changed = ImGui::Checkbox(label.c_str(), &v);
-    return {changed, v};
+    return v;
 }
 
-std::pair<bool, float> slider_float(const std::string& label, float value,
+float slider_float(const std::string& label, float value,
                                    float v_min, float v_max,
                                    const std::string& format = "%.3f", int flags = 0) {
     float v = value;
     bool changed = ImGui::SliderFloat(label.c_str(), &v, v_min, v_max, format.c_str(), flags);
-    return {changed, v};
+    return v;
 }
 
-std::pair<bool, std::array<float, 2>> slider_float2(const std::string& label,
+std::array<float, 2> slider_float2(const std::string& label,
                                                    std::array<float, 2> value,
                                                    float v_min, float v_max,
                                                    const std::string& format = "%.3f", int flags = 0) {
     float v[2] = {value[0], value[1]};
     bool changed = ImGui::SliderFloat2(label.c_str(), v, v_min, v_max, format.c_str(), flags);
-    return {changed, {v[0], v[1]}};
+    return {v[0], v[1]};
 }
 
 // MainMenuBar
