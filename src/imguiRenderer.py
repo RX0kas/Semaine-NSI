@@ -34,8 +34,8 @@ class ImGuiRenderer:
                 imgui.text(f"Positon: ({round(t.x*100,2)},{round(t.y*100,2)})")
                 imgui.separator_text("Renderer")
                 imgui.text(f"Vertex num: {len(t.get_vertices())}")
-                _, t.show_turtle = imgui.checkbox("Dessine tortue",t.show_turtle)
-                _, t.turtle_size = imgui.slider_float("Taille", t.turtle_size, 0.001, 1)
+                t.show_turtle = imgui.checkbox("Dessine tortue",t.show_turtle)
+                t.turtle_size = imgui.slider_float("Taille", t.turtle_size, 0.001, 1)
             if imgui.collapsing_header("Application"):
                 imgui.text("DeltaTime: {}".format(round(deltaTime,3)))
                 imgui.text("FPS: {}".format(round(1/deltaTime,3)))
@@ -43,8 +43,8 @@ class ImGuiRenderer:
                 imgui.draw_imgui_info_widget()
             if imgui.collapsing_header("Camera"):
                 pos = [camera.x,camera.y]
-                _, newPos = imgui.slider_float2("Position",pos,-5,5)
+                newPos = imgui.slider_float2("Position",pos,-5,5)
                 camera.x = newPos[0]
                 camera.y = newPos[1]
-                _, camera.zoom = imgui.slider_float("Zoom",camera.zoom,0.5,10)
+                camera.zoom = imgui.slider_float("Zoom",camera.zoom,0.5,10)
             imgui.end()

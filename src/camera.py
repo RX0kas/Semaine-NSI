@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 class Camera:
@@ -10,6 +12,7 @@ class Camera:
         self.__y = 0
         self.__zoom = 0.5
         self.__view_matrix = None
+        self.__compute_view_matrix()
         
     def __compute_view_matrix(self):
         """
@@ -22,32 +25,39 @@ class Camera:
         [Y'] = [0 s (1-s)Yc] * [y]
         [1]    [0 0       1]   [1]
         """
-        self.__view_matrix = np.matrix([[self.__zoom,0,(1-self.__zoom)*self.__x],
-                                        [0,self.__zoom,(1-self.__zoom)*self.__x],
-                                        [0,0,]],dtype=np.float32)
+        self.__view_matrix = np.matrix([[self.__zoom,0,          (1-self.__zoom)*self.__x],
+                                            [0,           self.__zoom,(1-self.__zoom)*self.__y],
+                                            [0,           0          ,1
+                                             ]],dtype=np.float32)
     
-    def get_view_matrix(self):
+    def __get_view_matrix(self):
+        if self.__view_matrix is None:
+            warnings.warn("View matrix not computed")
+            self.__compute_view_matrix()
         return self.__view_matrix
 
-    def set_x(self,x):
+    def __set_x(self, x):
         self.__x = x
+        self.__compute_view_matrix()
 
-    def get_x(self):
+    def __get_x(self):
         return self.__x
 
-    def set_y(self,y):
+    def __set_y(self, y):
         self.__y = y
+        self.__compute_view_matrix()
 
-    def get_y(self):
+    def __get_y(self):
         return self.__y
 
-    def set_zoom(self,zoom):
+    def __set_zoom(self, zoom):
         self.__zoom = zoom
+        self.__compute_view_matrix()
 
-    def get_zoom(self):
+    def __get_zoom(self):
         return self.__zoom
 
-    x = property(get_x, set_x)
-    y = property(get_y, set_y)
-    zoom = property(get_zoom, set_zoom)
-    view_matrix = property(get_view_matrix)
+    x = property(__get_x, __set_x)
+    y = property(__get_y, __set_y)
+    zoom = property(__get_zoom, __set_zoom)
+    view_matrix = property(__get_view_matrix)
