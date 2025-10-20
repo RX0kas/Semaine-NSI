@@ -24,18 +24,30 @@ class Turtle:
         self.y = y
         self.angle = angle  # en degrés
         self.pen_down = True  # par défaut, la tortue trace
-        self.vertices = []  # segments déjà terminés (liste de sommets)
         self.current_path = []  # segment en cours de tracé (non encore validé)
         self.turtle_size = 0.05
         self.show_turtle = True
         if self.pen_down:
             self.current_path = [self.x, self.y]
 
+        self.capacity = 2_000_000
+        self._vertex_buf = np.empty((self.capacity * 2,), dtype=np.float32)  # flatten x,y
+        self._vertex_count = 0
+
         if Turtle.__instance is not None:
             raise PermissionError("Turtle ne peux pas avoir plus d'une instance")
         Turtle.__instance = self
 
-
+    def __append_vertices(self, new_pts):
+        n = len(new_pts)
+        if self._vertex_count + n > self._vertex_buf.size:
+            # strategy: reallocate (doubling) or drop oldest
+            newcap = max(self._vertex_buf.size * 2, self._vertex_count + n)
+            nb = np.empty((newcap,), dtype=np.float32)
+            nb[:self._vertex_count] = self._vertex_buf[:self._vertex_count]
+            self._vertex_buf = nb
+        self._vertex_buf[self._vertex_count:self._vertex_count + n] = new_pts
+        self._vertex_count += n
 
     def forward(self, distance):
         """
@@ -53,7 +65,7 @@ class Turtle:
 
         if self.pen_down:
             # Si on trace : ajouter un segment (de l'ancienne position à la nouvelle)
-            self.current_path.extend([self.x, self.y, new_x, new_y])
+            self.__append_vertices([self.x, self.y, new_x, new_y])
 
         # Mise à jour de la position
         self.x = new_x
@@ -90,9 +102,9 @@ class Turtle:
         Relève le stylo : la tortue se déplace sans tracer.
         Le chemin en cours est validé et ajouté aux segments terminés.
         """
-        if self.current_path:
+        if self.current_path!=[0,0]:
             # On ajoute le chemin en cours aux segments validés
-            self.vertices.extend(self.current_path)
+            self.__append_vertices(self.current_path)
             self.current_path = []
         self.pen_down = False
 
@@ -112,10 +124,9 @@ class Turtle:
 
         :return: tableau numpy de coordonnées (x, y) en float32
         """
-        all_vertices = self.vertices.copy()
         if self.current_path:
-            all_vertices.extend(self.current_path)
-        return np.array(all_vertices, dtype=np.float32)
+            self.__append_vertices(self.current_path)
+        return self._vertex_buf[:self._vertex_count]
 
     def goto(self,x,y):
         """

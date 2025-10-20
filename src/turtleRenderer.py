@@ -33,6 +33,8 @@ class TurtleRenderer:
 
         glBindVertexArray(self.vao)
         glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        self.max_vertices = 10_000_000  # dimensionner raisonnablement ou grow dynamiquement
+        glBufferData(GL_ARRAY_BUFFER, self.max_vertices * 2 * 4, None, GL_DYNAMIC_DRAW)  # float32 x,y -> 2*4 bytes
 
         # Associer l'attribut "a_position" du shader aux données du VBO
         position = glGetAttribLocation(self.shader.getProgram(), "a_position")
@@ -56,13 +58,20 @@ class TurtleRenderer:
 
         # --- Affichage du chemin (lignes) ---
         vertices = turtle.get_vertices()
+
+        glBufferData(GL_ARRAY_BUFFER, self.max_vertices * 2 * 4, None, GL_DYNAMIC_DRAW)
+
         if len(vertices) > 0:
             glBindVertexArray(self.vao)
             glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
             glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
 
-            # Draw all completed paths
-            completed_vertices = np.array(turtle.vertices, dtype=np.float32)
+            n_floats = vertices.size  # numpy array float32 1D
+            glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.nbytes, vertices)
+            glDrawArrays(GL_LINE_STRIP, 0, vertices.shape[0] // 2)
+
+            """# Draw all completed paths
+            completed_vertices = np.array(vertices, dtype=np.float32)
             if len(completed_vertices) > 0:
                 glBufferData(GL_ARRAY_BUFFER, completed_vertices.nbytes, completed_vertices, GL_STATIC_DRAW)
                 # Draw as line strips for each continuous path
@@ -73,9 +82,8 @@ class TurtleRenderer:
             if turtle.current_path and len(turtle.current_path) >= 4:  # Need at least 2 points
                 current_vertices = np.array(turtle.current_path, dtype=np.float32)
                 glBufferData(GL_ARRAY_BUFFER, current_vertices.nbytes, current_vertices, GL_STATIC_DRAW)
-                glDrawArrays(GL_LINE_STRIP, 0, len(current_vertices) // 2)
+                glDrawArrays(GL_LINE_STRIP, 0, len(current_vertices) // 2)"""
 
-        # --- Affichage de la tortue (triangle) ---
         if turtle.show_turtle:
             self.__draw_turtle(turtle)
 
