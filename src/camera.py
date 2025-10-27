@@ -2,6 +2,7 @@ import time
 import warnings
 import numpy as np
 import math
+from typing import Any
 
 
 class Camera:
@@ -67,7 +68,7 @@ class Camera:
 
         # Calculate zoom factor
         zoom_factor = 1.1 ** yoffset
-        self.target_zoom = max(self.target_zoom * zoom_factor, 0.05)
+        self.target_zoom = max(self.target_zoom * zoom_factor, 0.0000005)
 
         # Store mouse position for smooth zoom adjustment
         self.__last_mouse_pos = (mouse_x, mouse_y, world_before)
@@ -123,7 +124,7 @@ class Camera:
             [0, 0, 1]
         ], dtype=np.float32)
 
-    def get_view_matrix(self):
+    def get_view_matrix(self) -> np.matrix[tuple[int, int], Any]:
         if self.__view_matrix is None:
             warnings.warn("View matrix not computed")
             self.__compute_view_matrix()

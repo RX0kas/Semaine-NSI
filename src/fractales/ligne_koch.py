@@ -1,9 +1,11 @@
+# pour lancer ce fichier:
+# Il faut être dans le dossier parent à src
+# python -m src.fractales.ligne_koch
 from src.application import Application
-from src.returtle import Turtle
+import src.cpp_backend as backend
 
 def ligne_koch(profondeur : int, taille : int = 180):
-    t = Turtle.get_turtle()
-
+    t = backend.get_turtle()
     if profondeur==0:
         t.forward(taille)
     else:
@@ -18,7 +20,7 @@ def ligne_koch(profondeur : int, taille : int = 180):
 
 if __name__ == "__main__":
     r = Application()
-    t = Turtle.get_turtle()
+    t = backend.get_turtle()
 
     t.up()
     t.goto(-90, -90)
