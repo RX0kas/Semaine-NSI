@@ -1,13 +1,12 @@
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) # dossier src
+# pour lancer ce fichier:
+# Il faut être dans le dossier parent à src
+# python -m src.fractales.arbre3
 
 from src.application import Application
-from src.returtle import Turtle
-
+import src.cpp_backend as backend
 
 def arbre3(profondeur : int, taille : int = 110):
-    t = Turtle.get_turtle()
+    t = backend.get_turtle()
 
     if profondeur == 0:
         for _ in range(3):
@@ -29,7 +28,7 @@ def arbre3(profondeur : int, taille : int = 110):
 
 if __name__ == "__main__":
     r = Application()
-    t = Turtle.get_turtle()
+    t = backend.get_turtle()
 
     t.up()
     t.goto(0, -20)

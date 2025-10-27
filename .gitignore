@@ -3,6 +3,6 @@ venv_semaine_nsi/
 .idea/
 __pycache__
 *.ini
-imgui_py_backend/build/
-imgui_py_backend/cmake-build-debug
-imgui_py_backend/cmake-build-release
+cpp_backend/build/
+cpp_backend/cmake-build-debug
+cpp_backend/cmake-build-release
