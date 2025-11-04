@@ -23,6 +23,6 @@ if __name__ == "__main__":
     t.goto(70, -50)
     t.pendown()
 
-    flocon_koch(10)
+    flocon_koch(5)
 
     r.run()
