@@ -32,6 +32,6 @@ if __name__ == "__main__":
     t.goto(-90, -90)
     t.down()
 
-    courbe_de_koch_quadratique(0)
+    courbe_de_koch_quadratique(9)
 
     r.run()
