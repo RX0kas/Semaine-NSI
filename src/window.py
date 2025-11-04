@@ -12,9 +12,6 @@ def on_resize(window, width, height):
     # Définir la zone de rendu (viewport) sur toute la surface de la fenêtre
     glViewport(0, 0, width, height)
 
-    c = Camera.instance()
-    if c is not None: c.set_window_size(width, height)
-
 def scroll_callback(window, xoffset, yoffset):
     mx, my = get_cursor_pos(window)
     w, h = get_window_size(window)
@@ -43,6 +40,8 @@ class Window:
     """
     Classe utilitaire pour créer et gérer une fenêtre GLFW avec contexte OpenGL.
     """
+    
+    __instance = None
 
     def __init__(self, width: int, height: int, title: str):
         """
@@ -64,6 +63,8 @@ class Window:
 
         # Créer la fenêtre
         self.__window = create_window(width, height, title, None, None)
+        self.__height = height
+        self.__width = width
 
         if not self.__window:
             terminate()
@@ -82,6 +83,10 @@ class Window:
 
         # Configurer la vue initiale
         on_resize(self.__window, width, height)
+        
+        if Window.__instance is not None:
+            raise PermissionError("Window ne peux pas avoir plus d'une instance")
+        Window.__instance = self
 
     def show(self):
         show_window(self.__window)
@@ -113,3 +118,16 @@ class Window:
 
     def getTime(self) -> float:
         return get_time()
+    
+    def getHeight(self) -> float:
+        return self.__height
+    
+    def getWidth(self) -> float:
+        return self.__width
+    
+    height = property(getHeight)
+    width = property(getWidth)
+    
+    @staticmethod
+    def instance() -> "Window":
+        return Window.__instance # type: ignore
