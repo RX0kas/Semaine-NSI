@@ -53,7 +53,7 @@ class ImGuiRenderer:
             if imgui.collapsing_header("ImGui"):
                 imgui.draw_imgui_info_widget()
             if imgui.collapsing_header("Camera"):
-                pos = [camera.x,camera.y]
+                """pos = [camera.x,camera.y]
                 newPos = imgui.slider_float2("Position",pos,-5,5)
                 camera.x = newPos[0]
                 camera.y = newPos[1]
@@ -61,13 +61,15 @@ class ImGuiRenderer:
                 camera.zoom_speed = imgui.slider_float("ZoomSpeed",camera.zoom_speed,0.1,10)
                 camera.move_speed = imgui.slider_float("MoveSpeed",camera.move_speed,0.1,100)
                 camera.smooth_damping = imgui.slider_float("SmoothDamping",camera.smooth_damping,0.1,1)
-                camera.use_old_cam = imgui.checkbox("Ancienne camera",camera.use_old_cam)
+                camera.zoom_follow_strength = imgui.slider_float("ZoomFollowStrength",camera.zoom_follow_strength,0,1)
                 imgui.separator_text("Data")
                 if camera._last_mouse_pos==None:
                     imgui.text(f"Last mouse pos: (None;None)")
                     imgui.text(f"Position de la souris en coordonné monde avant le zoom: (None;None)")
                 else:
                     imgui.text(f"Last mouse pos: ({camera._last_mouse_pos[0]};{camera._last_mouse_pos[1]})")
-                    imgui.text(f"Position de la souris en coordonné monde avant le zoom: ({round(camera._last_mouse_pos[2][0],3)};{round(camera._last_mouse_pos[2][1],3)})")
+                    imgui.text(f"Position de la souris en coordonné monde avant le zoom: ({round(camera._last_mouse_pos[2][0],3)};{round(camera._last_mouse_pos[2][1],3)})")"""
+                imgui.text("Rewrite it!")
+
                 
             imgui.end()
