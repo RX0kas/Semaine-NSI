@@ -53,23 +53,26 @@ class ImGuiRenderer:
             if imgui.collapsing_header("ImGui"):
                 imgui.draw_imgui_info_widget()
             if imgui.collapsing_header("Camera"):
-                """pos = [camera.x,camera.y]
+                imgui.separator_text("Position")
+                pos = [camera.x,camera.y]
                 newPos = imgui.slider_float2("Position",pos,-5,5)
                 camera.x = newPos[0]
                 camera.y = newPos[1]
-                camera.target_zoom = imgui.slider_float("Zoom",camera.target_zoom,0.5,10)
+                camera.enable_position_clamp = imgui.checkbox("Enable Position Clamp",camera.enable_position_clamp)
+                camera.position_limit = imgui.slider_float("Position limit",camera.position_limit,10**1,10**10)
+                
+                imgui.separator_text("Camera & Interpolation")
                 camera.zoom_speed = imgui.slider_float("ZoomSpeed",camera.zoom_speed,0.1,10)
-                camera.move_speed = imgui.slider_float("MoveSpeed",camera.move_speed,0.1,100)
-                camera.smooth_damping = imgui.slider_float("SmoothDamping",camera.smooth_damping,0.1,1)
-                camera.zoom_follow_strength = imgui.slider_float("ZoomFollowStrength",camera.zoom_follow_strength,0,1)
-                imgui.separator_text("Data")
-                if camera._last_mouse_pos==None:
-                    imgui.text(f"Last mouse pos: (None;None)")
-                    imgui.text(f"Position de la souris en coordonné monde avant le zoom: (None;None)")
-                else:
-                    imgui.text(f"Last mouse pos: ({camera._last_mouse_pos[0]};{camera._last_mouse_pos[1]})")
-                    imgui.text(f"Position de la souris en coordonné monde avant le zoom: ({round(camera._last_mouse_pos[2][0],3)};{round(camera._last_mouse_pos[2][1],3)})")"""
-                imgui.text("Rewrite it!")
-
+                camera.zoom_interp = "exp" if imgui.checkbox("Zoom Exponential Interpolation",camera.zoom_interp=="exp") else "linear"
+                camera.zoom_wheel_base  = imgui.slider_float("Zoom Wheel Base",camera.zoom_wheel_base,0.01,2)
+                camera.zoom_sensitivity  = imgui.slider_float("Zoom Sensitivity",camera.zoom_sensitivity,0.1,10)
+                camera.follow_interp_speed = imgui.slider_float("Follow Interp Speed",camera.follow_interp_speed,1,100)
+                camera.zoom_follow_strength = imgui.slider_float("Zoom Follow Strength",camera.zoom_follow_strength,0,2)
+                camera.clear_follow_on_input = imgui.checkbox("Clear Follow On Input",camera.clear_follow_on_input)
+                
+                imgui.separator_text("Dragging")
+                camera.pan_speed = imgui.slider_float("Pan Speed",camera.pan_speed,0.1,10)
+                camera.pan_smoothing = imgui.slider_float("Pan Smoothing",camera.pan_smoothing,0.0,1)
+                
                 
             imgui.end()
