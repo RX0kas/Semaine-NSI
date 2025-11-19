@@ -65,8 +65,9 @@ class Camera:
         Coordinate system: normalized device coords x,y in [-1,1], y up.
         """
         w,h = backend.get_frame_size()
-        mouse_y -= backend.get_menu_bar_height()*2 # TODO: find a more precise way
-        mouse_x -= 4
+        # TODO: find a more precise way
+        mouse_y -= 26
+        mouse_x -= 8
 
         if mouse_y < 0 or mouse_x <0:
             return None

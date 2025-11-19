@@ -150,13 +150,15 @@ void setSelectedFractalesID(const char* id) {
    selectedFractaleID = id;
 }
 
-void loadTexture(const char* path,GLuint* tex) {
+void loadTexture(const char* path, GLuint* tex) {
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
    int w, h, channels;
    unsigned char* data = stbi_load(path, &w, &h, &channels, 4);
    if (!data) {
-      // erreur de chargement
-
+      printf("Erreur chargement texture: %s\n", path);
+      return;
    }
+   printf("Chargement texture: %s\n", path);
 
    glGenTextures(1, tex);
    glBindTexture(GL_TEXTURE_2D, *tex);
@@ -166,20 +168,13 @@ void loadTexture(const char* path,GLuint* tex) {
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-   glTexImage2D(
-       GL_TEXTURE_2D,
-       0,
-       GL_RGBA,
-       w,
-       h,
-       0,
-       GL_RGBA,
-       GL_UNSIGNED_BYTE,
-       data
-   );
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // important
+
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
    stbi_image_free(data);
 }
+
 
 void registerTexture() {
    loadTexture(prototypeTexturePath, &prototypeTexture);
@@ -187,13 +182,14 @@ void registerTexture() {
 
 void renderPreviewFractale(float sz,Fractale fractale) {
    ImVec2 p = ImGui::GetCursorScreenPos();
+   ImTextureID texID = (ImTextureID)(intptr_t)prototypeTexture;
    ImGui::GetWindowDrawList()->AddImage(
-      fractale.TextureID,        // ID de la texture GPU
-      p,                         // coin haut-gauche
-      ImVec2(p.x + sz, p.y + sz),// coin bas-droite
-      ImVec2(0,0),          // UV min
-      ImVec2(1,1)           // UV max
-   );
+    texID,
+    p,
+    ImVec2(p.x + sz, p.y + sz),
+    ImVec2(0,1), // UV min
+    ImVec2(1,0)  // UV max
+);
    ImGui::Dummy(ImVec2(sz, sz)); // Reserver de l'espace
    ImGui::SameLine();
    if (ImGui::MenuItem(fractale.name))

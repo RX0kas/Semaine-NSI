@@ -69,6 +69,7 @@ class Window:
         window_hint(OPENGL_PROFILE, OPENGL_CORE_PROFILE)
         window_hint(VISIBLE,GL_FALSE)
         window_hint(OPENGL_FORWARD_COMPAT, GL_TRUE)
+        window_hint(RESIZABLE,GL_FALSE)
 
         # Créer la fenêtre
         self.__window = create_window(width, height, title, None, None)
