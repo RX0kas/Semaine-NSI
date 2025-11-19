@@ -8,6 +8,8 @@
 #include <sstream>
 #include <GLFW/glfw3.h>
 
+#include "interface.hpp"
+
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
@@ -174,6 +176,24 @@ void Turtle::pendown() {
     }
 }
 
+void Turtle::nettoyer() {
+    vertices.clear();
+    path_ranges.clear();
+    vertex_count = 0;
+    current_path_start = -1;
+    current_minx = 0;
+    current_miny = 0;
+    current_maxx = 0;
+    current_maxy = 0;
+    path_count_visible = 0;
+    path_count = 0;
+
+    vertices.reserve(4096);
+    start_new_path_if_needed();
+    append_point_world(x,y);
+}
+
+
 // fills vector 'out' with path ranges; include_open adds the current open path if any
 void Turtle::fillPathRanges(std::vector<PathRange>& out, bool include_open) const {
     out.clear();
@@ -266,8 +286,8 @@ bool TurtleRenderer::initializeGlad() {
     return true;
 }
 
-TurtleRenderer::TurtleRenderer() : view_matrix{0} {
-    // nothing heavy here
+TurtleRenderer::TurtleRenderer() {
+    updateViewMatrix();
 }
 
 TurtleRenderer::~TurtleRenderer() {
@@ -330,6 +350,9 @@ void TurtleRenderer::initializeGLResources() {
     glBindVertexArray(0);
 
     // Ensure primitive restart enabled when drawing; we enable/disable per-frame in render()
+
+    // Interface initialisation
+    registerTexture();
 }
 
 void TurtleRenderer::cleanup() {
@@ -355,12 +378,15 @@ void TurtleRenderer::setCamera(float camera_x_, float camera_y_, float zoom_) {
 // we want matrix: [s 0 tx; 0 s ty; 0 0 1] so memory (col-major) = {s,0,0, 0,s,0, tx,ty,1}
 void TurtleRenderer::updateViewMatrix() {
     float s = zoom;
-    float tx = (1.0f - s) * camera_x;
-    float ty = (1.0f - s) * camera_y;
-    // column-major layout
-    view_matrix[0] = s; view_matrix[1] = 0.0f; view_matrix[2] = 0.0f;
-    view_matrix[3] = 0.0f; view_matrix[4] = s; view_matrix[5] = 0.0f;
-    view_matrix[6] = tx; view_matrix[7] = ty; view_matrix[8] = 1.0f;
+
+    // Translation du modèle vers la caméra
+    float tx = -camera_x * s;
+    float ty = -camera_y * s;
+
+    // Column-major
+    view_matrix[0] = s;     view_matrix[1] = 0.0f; view_matrix[2] = 0.0f;
+    view_matrix[3] = 0.0f;  view_matrix[4] = s;    view_matrix[5] = 0.0f;
+    view_matrix[6] = tx;    view_matrix[7] = ty;   view_matrix[8] = 1.0f;
 }
 
 void TurtleRenderer::drawTurtle(const Turtle &t) {
@@ -521,9 +547,9 @@ void TurtleRenderer::render() {
     glEnable(GL_PRIMITIVE_RESTART);
     glPrimitiveRestartIndex(primitive_restart_index);
 
-    glUniform4f(glGetUniformLocation(shader_program, "u_color"), 0.0f, 0.0f, 0.0f, 1.0f);
+    glUniform4f(glGetUniformLocation(shader_program, "u_color"), color[0], color[1], color[2], 1.0f);
     GLsizei indices_count = static_cast<GLsizei>(indices.size());
-    glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_INT, (const void*)0);
+    glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_INT, static_cast<const void *>(nullptr));
 
     glDisable(GL_PRIMITIVE_RESTART);
 

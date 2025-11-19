@@ -2,12 +2,12 @@ import time
 import math
 from typing import Optional, Tuple
 import numpy as np
-
+import src.cpp_backend as backend
 
 class Camera:
     __instance = None
 
-    def __init__(self) -> None:
+    def __init__(self,glfw_handle) -> None:
         # Transform
         self.x: float = 0.0
         self.y: float = 0.0
@@ -56,15 +56,22 @@ class Camera:
             raise PermissionError("Camera ne peut pas avoir plus d'une instance")
         Camera.__instance = self
 
+        self.__glfw_handle = glfw_handle
+
     # ------------------ Coordinate conversions ------------------
-    def screen_to_world(self, mouse_x: float, mouse_y: float, window_size: Tuple[int, int]) -> np.ndarray:
+    def screen_to_world(self, mouse_x: float, mouse_y: float) -> np.ndarray:
         """Convertit des coordonnées écran (pixels) en coordonnées monde.
 
-        window_size: (width, height)
         Coordinate system: normalized device coords x,y in [-1,1], y up.
         """
-        w, h = window_size
-        if w == 0 or h == 0:
+        w,h = backend.get_frame_size()
+        mouse_y -= backend.get_menu_bar_height()*2 # TODO: find a more precise way
+        mouse_x -= 4
+
+        if mouse_y < 0 or mouse_x <0:
+            return None
+
+        if w <= 0 or h <= 0:
             return np.array([self.x, self.y], dtype=np.float64)
 
         nx = (mouse_x / w) * 2.0 - 1.0
@@ -72,19 +79,9 @@ class Camera:
 
         world_x = (nx / self.zoom) + self.x
         world_y = (ny / self.zoom) + self.y
+
+
         return np.array([world_x, world_y], dtype=np.float64)
-
-    def world_to_screen(self, world_x: float, world_y: float, window_size: Tuple[int, int]) -> np.ndarray:
-        w, h = window_size
-        if w == 0 or h == 0:
-            return np.array([w * 0.5, h * 0.5], dtype=np.float64)
-
-        nx = (world_x - self.x) * self.zoom
-        ny = (world_y - self.y) * self.zoom
-
-        screen_x = (nx * 0.5 + 0.5) * w
-        screen_y = (0.5 - ny * 0.5) * h
-        return np.array([screen_x, screen_y], dtype=np.float64)
 
     # ------------------ Input handlers ------------------
     def on_scroll(self, xoffset: float, yoffset: float, mouse_pos: Tuple[float, float], window_size: Tuple[int, int]) -> None:
@@ -97,7 +94,9 @@ class Camera:
         mouse_x, mouse_y = mouse_pos
 
         # world under mouse before changing target zoom
-        world_before = self.screen_to_world(mouse_x, mouse_y, window_size)
+        world_before = self.screen_to_world(mouse_x, mouse_y)
+        if world_before is None:
+            return
 
         step = yoffset * self.zoom_sensitivity
         factor = self.zoom_wheel_base ** step
@@ -178,7 +177,9 @@ class Camera:
             mouse_x, mouse_y, world_before, window_size = self._last_mouse_follow
 
             # compute where the same screen pixel maps in world space after current zoom
-            world_after = self.screen_to_world(mouse_x, mouse_y, window_size)
+            world_after = self.screen_to_world(mouse_x, mouse_y)
+            if world_after is None:
+                return
 
             # delta required so the world_before appears again under the mouse
             delta_world = world_before - world_after
@@ -224,12 +225,14 @@ class Camera:
 
         instant=True applies zoom immediately. Otherwise it sets target_zoom and follow behavior.
         """
+        global mx, my
         if window_size is None and center is not None:
             raise ValueError("window_size must be provided when specifying center")
 
         if center is not None:
             mx, my = center
-            world_before = self.screen_to_world(mx, my, window_size)  # type: ignore
+            world_before = self.screen_to_world(mx, my)  # type: ignore
+            if world_before is None: return
         else:
             world_before = None
 
@@ -238,7 +241,8 @@ class Camera:
             self.zoom = z
             self.target_zoom = z
             if world_before is not None:
-                world_after = self.screen_to_world(mx, my, window_size)  # type: ignore
+                world_after = self.screen_to_world(mx, my)  # type: ignore
+                if world_after is None: return
                 self.x += float(world_before[0] - world_after[0])
                 self.y += float(world_before[1] - world_after[1])
         else:

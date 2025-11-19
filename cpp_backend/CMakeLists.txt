@@ -55,6 +55,8 @@ set(SRC_FILES
         wrapper.cpp
         turtle_renderer.cpp
         turtle_renderer.hpp
+        interface.cpp
+        interface.hpp
         glad.c
         imgui/imgui.cpp
         imgui/imgui_draw.cpp

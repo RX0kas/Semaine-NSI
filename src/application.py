@@ -1,5 +1,6 @@
 import glfw
 from src.camera import Camera
+from src.interface import Interface
 from src.window import Window
 from src.imguiRenderer import ImGuiRenderer
 
@@ -23,41 +24,57 @@ class Application:
         self.__turtle = backend.Turtle()
         self.__turtle.show_turtle = True
         self.__turtle.turtle_size = 0.05
-        self.__camera = Camera()
+        self.__camera = Camera(win)
         self.__turtleRenderer.set_camera(self.__camera.x,self.__camera.y,self.__camera.zoom)
+
+        backend.init_fbo(self.__fenetre.width, self.__fenetre.height)
+
         from OpenGL.GL import glClearColor
         glClearColor(0.5, 0.5, 0.5, 1)
+
+        self.__interface = Interface()
 
     def run(self):
         self.__fenetre.show()
 
+        # TODO: réallouer la texture FBO quand la taille change
+
         lastFrame = 0.0
-        from OpenGL.GL import glClear,GL_COLOR_BUFFER_BIT
         while not self.__fenetre.devrait_fermer():
+            glfw.poll_events()
             currentFrame = self.__fenetre.getTime()
             deltaTime = currentFrame - lastFrame
             lastFrame = currentFrame
 
             # Update functions
-            # TODO: faire un system d'event
             self.__camera.update()
+            self.__interface.update()
 
-            self.__imguiRenderer.newFrame()
-
-            glClear(GL_COLOR_BUFFER_BIT)
-
-            # Sert a envoyer au shader les donnés de la camera
             self.__turtleRenderer.set_camera(
                 self.__camera.x,
                 self.__camera.y,
                 self.__camera.zoom
             )
-            self.__turtleRenderer.render()
 
-            self.__imguiRenderer.show_debug_window(deltaTime,self.__camera)
+            self.__imguiRenderer.newFrame()
+
+            backend.render_dock_space()
+            # start DrawShaderWindow
+            backend.begin_shader_preview()
+            backend.render_menu_bar()
+
+            backend.begin_render_shader_to_fbo()
+            self.__turtleRenderer.render()
+            backend.end_render_shader_to_fbo()
+
+            backend.end_shader_preview() # end DrawShaderWindow
+
+            self.__interface.render()
+            self.__imguiRenderer.show_debug_window(deltaTime, self.__camera)
 
             self.__imguiRenderer.render()
-            self.__fenetre.swapbuffer()
+
+            glfw.swap_buffers(self.__fenetre.getWindow())
 
         self.__imguiRenderer.shutdown()
         self.__turtleRenderer.cleanup()

@@ -3,6 +3,8 @@ import time
 from glfw import *
 from OpenGL.GL import *
 from src.camera import Camera
+from src.interface import Interface
+import src.cpp_backend as backend
 
 dragging = False
 last_mouse = None
@@ -14,7 +16,7 @@ def on_resize(window, width, height):
 
 def scroll_callback(window, xoffset, yoffset):
     mx, my = get_cursor_pos(window)
-    w, h = get_window_size(window)
+    w, h = backend.get_fbo_screen_size()
     Camera.instance().on_scroll(xoffset, yoffset, (mx, my), (w, h))
 
 def mouse_button_callback(window, button, action, mods):
@@ -23,6 +25,13 @@ def mouse_button_callback(window, button, action, mods):
         dragging = (action == PRESS)
         if dragging:
             last_mouse = get_cursor_pos(window)
+    if button == MOUSE_BUTTON_LEFT and action == PRESS:
+        mouse = get_cursor_pos(window)
+        posToWorld = Camera.instance().screen_to_world(mouse[0], mouse[1])
+        if posToWorld is None:
+            return
+        Interface.placeFractale(posToWorld[0], posToWorld[1])
+
 
 def cursor_pos_callback(window, xpos, ypos):
     global last_mouse
@@ -31,7 +40,7 @@ def cursor_pos_callback(window, xpos, ypos):
     if dragging and last_mouse is not None:
         dx = xpos - last_mouse[0]
         dy = ypos - last_mouse[1]
-        w, h = get_window_size(window)
+        w, h = backend.get_fbo_screen_size()
         Camera.instance().on_drag(dx, dy, (w, h), dt)
         last_mouse = (xpos, ypos)
 
@@ -90,15 +99,6 @@ class Window:
 
     def show(self):
         show_window(self.__window)
-
-    def swapbuffer(self):
-        """
-        Met à jour l'affichage de la fenêtre :
-        - traite les événements (clavier, souris, etc.)
-        - échange les buffers pour afficher la scène rendue
-        """
-        poll_events()
-        swap_buffers(self.__window)
 
     def supprimer(self):
         """

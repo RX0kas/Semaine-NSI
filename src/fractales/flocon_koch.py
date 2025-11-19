@@ -7,6 +7,7 @@ from src.fractales.ligne_koch import ligne_koch
 import src.cpp_backend as backend
 
 def flocon_koch(profondeur : int):
+    t = backend.get_turtle()
     t.left(180)
     ligne_koch(profondeur,140)
     t.right(120)

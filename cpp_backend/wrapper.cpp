@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "turtle_renderer.hpp"
 
 #include <pybind11/pybind11.h>
@@ -6,6 +8,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
+
+#include "interface.hpp"
 
 
 namespace py = pybind11;
@@ -51,6 +55,12 @@ void render() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     ImGui::Render();
+    int display_w, display_h;
+    glfwGetWindowSize(glfwGetCurrentContext(), &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -135,9 +145,33 @@ void endMainMenuBar() {
 // --- Module Python ---
 PYBIND11_MODULE(cpp_backend, m) {
     m.doc() = "Python bindings pour ImGui avec backends C++ OpenGL3 + GLFW et backend graphique Turtle";
+    ///////////////
+    // Interface //
+    ///////////////
+    m.def("get_selected_fractales_id",&getSelectedFractalesID);
+    m.def("set_selected_fractales_id",&setSelectedFractalesID,py::arg("id"));
+    m.def("render_menu_bar",&renderMenuBar);
+    m.def("render_dock_space",&renderDockSpace);
+    m.def("get_fbo",&getFBO);
+    m.def("begin_render_shader_to_fbo",&beginRenderShaderToFBO);
+    m.def("end_render_shader_to_fbo",&endRenderShaderToFBO);
+    m.def("init_fbo",&initFBO,py::arg("w"),py::arg("h"));
+    m.def("get_profondeur",&getDepth);
+    m.def("renderProgressBar",&renderProgressBar);
+    m.def("setShowProgress",&setShowProgress,py::arg("show"));
+
     ///////////
     // ImGui //
     ///////////
+    // Shader preview
+    m.def("begin_shader_preview",&beginShaderPreview);
+    m.def("end_shader_preview",&endShaderPreview);
+
+    m.def("get_fbo_screen_pos",&getFBOPos);
+    m.def("get_fbo_screen_size",&getFBOSize);
+    m.def("get_frame_size",&getFrameSize);
+    m.def("get_menu_bar_height",&getMenuBarHeight);
+    // other
     m.def("init_imgui", &init_imgui);
     m.def("destroy_context", &destroy_context);
     m.def("new_frame", &new_frame);
@@ -146,6 +180,8 @@ PYBIND11_MODULE(cpp_backend, m) {
 
     m.def("begin", &begin, py::arg("name"));
     m.def("end", &end_window);
+    m.def("open_popup",[](const char* name){ImGui::OpenPopup(name);},py::arg("name"));
+    m.def("button",[](const char* name){return ImGui::Button(name);},py::arg("name"));
     m.def("text", &text, py::arg("content"));
     m.def("show_demo_window", &show_demo_window, py::arg("show") = true);
     m.def("dock_space", &dockspace);
@@ -292,7 +328,7 @@ PYBIND11_MODULE(cpp_backend, m) {
         // Propriétés
         .def_property_readonly("x", &Turtle::getX)
         .def_property_readonly("y", &Turtle::getY)
-        .def_property_readonly("angle", &Turtle::getAngle)
+        .def_property("angle", &Turtle::getAngle,&Turtle::setAngle)
         .def_property_readonly("pen_down", &Turtle::isPenDown)
         .def_property("show_turtle", &Turtle::isShowTurtle, &Turtle::setShowTurtle)
         .def_property("turtle_size", &Turtle::getTurtleSize, &Turtle::setTurtleSize)

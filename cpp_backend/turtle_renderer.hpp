@@ -33,13 +33,14 @@ public:
    void pendown();
 
    // accessors
-   float getX() const { return x; } // normalized world coords
-   float getY() const { return y; }
-   float getAngle() const { return angle; }
-   bool isPenDown() const { return pen_down; }
-   bool isShowTurtle() const { return show_turtle; }
+   [[nodiscard]] float getX() const { return x; } // normalized world coords
+   [[nodiscard]] float getY() const { return y; }
+   [[nodiscard]] float getAngle() const { return angle; }
+   void setAngle(float a) {angle=a;normalizeAngle();}
+   [[nodiscard]] bool isPenDown() const { return pen_down; }
+   [[nodiscard]] bool isShowTurtle() const { return show_turtle; }
    void setShowTurtle(const bool v) {show_turtle = v;}
-   float getTurtleSize() const { return turtle_size; }
+   [[nodiscard]] float getTurtleSize() const { return turtle_size; }
    void setTurtleSize(const float v) {turtle_size=std::max(0.0f,v);}
 
    // geometry access
@@ -56,6 +57,8 @@ public:
 
    // convenience: check if there is open path
    bool hasOpenPath() const { return current_path_start >= 0; }
+
+   void nettoyer();
 
    // singleton
    static Turtle& instance();
