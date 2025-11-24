@@ -3,6 +3,8 @@ import math
 from typing import Optional, Tuple
 import numpy as np
 import src.cpp_backend as backend
+from src.interface import Interface
+
 
 class Camera:
     __instance = None
@@ -57,6 +59,15 @@ class Camera:
         Camera.__instance = self
 
         self.__glfw_handle = glfw_handle
+        backend.set_explorer_clicked_callback(self.explorer_clicked_callback)
+
+    @staticmethod
+    def explorer_clicked_callback(x:int,y:int):
+        posToWorld = Camera.instance().screen_to_world(x, y)
+        if posToWorld is None:
+            return
+        backend.get_turtle().save_state_for_undo()
+        Interface.placeFractale(posToWorld[0], posToWorld[1])
 
     # ------------------ Coordinate conversions ------------------
     def screen_to_world(self, mouse_x: float, mouse_y: float) -> np.ndarray:
@@ -65,9 +76,6 @@ class Camera:
         Coordinate system: normalized device coords x,y in [-1,1], y up.
         """
         w,h = backend.get_frame_size()
-        # TODO: find a more precise way
-        mouse_y -= 26
-        mouse_x -= 8
 
         if mouse_y < 0 or mouse_x <0:
             return None

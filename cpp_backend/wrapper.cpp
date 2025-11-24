@@ -9,6 +9,7 @@
 #include "backends/imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
 
+#include "imgui_internal.h"
 #include "interface.hpp"
 
 
@@ -145,6 +146,8 @@ void endMainMenuBar() {
 // --- Module Python ---
 PYBIND11_MODULE(cpp_backend, m) {
     m.doc() = "Python bindings pour ImGui avec backends C++ OpenGL3 + GLFW et backend graphique Turtle";
+
+    //m.def("ajouter_fractale",&addFractale,py::arg("id"),py::arg("name"),py::arg("path"));
     ///////////////
     // Interface //
     ///////////////
@@ -171,6 +174,8 @@ PYBIND11_MODULE(cpp_backend, m) {
     m.def("get_fbo_screen_size",&getFBOSize);
     m.def("get_frame_size",&getFrameSize);
     m.def("get_menu_bar_height",&getMenuBarHeight);
+    m.def("set_explorer_clicked_callback",&setExplorerClickedCallback,py::arg("callback"));
+    m.def("render_texture_information",&renderTextureInformation);
     // other
     m.def("init_imgui", &init_imgui);
     m.def("destroy_context", &destroy_context);
@@ -340,7 +345,18 @@ PYBIND11_MODULE(cpp_backend, m) {
         .def("get_vertex_count", &Turtle::getVertexCount)
         // Singleton
         .def_static("get_turtle", &Turtle::instance,
-                    py::return_value_policy::reference);
+                    py::return_value_policy::reference)
+        .def("undo", &Turtle::undo)
+        .def("redo",&Turtle::redo)
+        .def("can_undo",&Turtle::canUndo)
+        .def("can_redo",&Turtle::canRedo)
+        .def("clear_undo_history",&Turtle::clearUndoHistory)
+        .def("set_undo_limit",&Turtle::setUndoLimit)
+        .def("get_memory_redo",&Turtle::getMemoryRedoStack)
+        .def("get_memory_undo",&Turtle::getMemoryUndoStack)
+        .def("get_size_redo",&Turtle::getSizeRedoStack)
+        .def("get_size_undo",&Turtle::getSizeUndoStack)
+        .def("save_state_for_undo",&Turtle::saveStateForUndo);
 
     // --- Classe TurtleRenderer ---
     py::class_<TurtleRenderer>(m, "TurtleRenderer")

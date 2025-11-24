@@ -4,7 +4,6 @@
 #include "imgui.h"
 #include <iostream>
 #include <ostream>
-#include <string>
 #include <GLFW/glfw3.h>
 
 #include "imgui_internal.h"
@@ -19,6 +18,9 @@ Fractale flocon_koch = {prototypeTexture,prototypeTexturePath,"Flocon de Koch","
 Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","ligne_koch"};
 
 GLuint fbo = 0;
+int currentFBOw = 0;
+int currentFBOh = 0;
+
 int getFBO() {
    return fbo;
 }
@@ -26,6 +28,7 @@ int getFBO() {
 GLuint colorTex = 0;
 
 void initFBO(int w, int h) {
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
    if (fbo != 0) {
       glDeleteFramebuffers(1, &fbo);
       fbo = 0;
@@ -35,6 +38,8 @@ void initFBO(int w, int h) {
       glDeleteTextures(1, &colorTex);
       colorTex = 0;
    }
+
+   glViewport(0, 0, w, h);
 
    glGenFramebuffers(1, &fbo);
    glGenTextures(1, &colorTex);
@@ -54,33 +59,95 @@ void initFBO(int w, int h) {
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void on_resize(int width, int height) {
+void renderTextureInformation() {
+   ImGui::Text("Version: %s", glGetString(GL_VERSION));
+   ImGui::Text("GPU: %s", glGetString(GL_RENDERER));
+   ImGui::Text("Vendor: %s", glGetString(GL_VENDOR));
 
+   ImGui::SeparatorText("Framebuffer");
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+   if (status == GL_FRAMEBUFFER_COMPLETE)
+      ImGui::Text("FBO OK");
+   else
+      ImGui::Text("FBO error : 0x%X", status);
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+   GLint tex;
+   glGetFramebufferAttachmentParameteriv(
+       GL_FRAMEBUFFER,
+       GL_COLOR_ATTACHMENT0,
+       GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
+       &tex
+   );
+
+   GLint w, h;
+   glBindTexture(GL_TEXTURE_2D, tex);
+   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);
+   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+   ImGui::Text("Texture: %d",tex);
+   ImGui::Text("Height: %d",w);
+   ImGui::Text("Width: %d",h);
+}
+
+
+void defaultCallback(int x,int y) {
+   std::cout << "Default callback called with (" << x << ";" << y << ")" << std::endl;
+}
+
+static std::function callback = &defaultCallback;
+
+void setExplorerClickedCallback(const std::function<void(int,int)> &c) {
+   callback = c;
 }
 
 
 static ImVec2 availSize = ImVec2(-1, -1);
+static ImGuiID explorerID;
+
+ImGuiID getExplorerID() {
+   return explorerID;
+}
 
 void beginShaderPreview() {
-   ImGuiWindowFlags winFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+   ImGuiWindowFlags winFlags = ImGuiWindowFlags_NoTitleBar |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
+   ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
    ImGui::Begin("Explorateur", nullptr, winFlags);
+   explorerID = ImGui::GetCurrentWindow()->ID;
 }
 
 static ImVec2 g_fbo_pos;
 static ImVec2 g_fbo_size;
 
-
 void endShaderPreview() {
    if (availSize.x > 0 && availSize.y > 0) {
+
+      if ((int)availSize.x != currentFBOw || (int)availSize.y != currentFBOh)
+      {
+         std::cout << "Recréation du framebuffer avec la taille :" << "(" << availSize.x << ", " << availSize.y << ")" << std::endl;
+         currentFBOw = (int)availSize.x;
+         currentFBOh = (int)availSize.y;
+         initFBO(currentFBOw, currentFBOh);
+      }
+
       ImTextureID texID = (ImTextureID)(intptr_t)colorTex;
       ImGui::Image(texID, availSize, ImVec2(0, 1), ImVec2(1, 0));
+
+      ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+      if (ImGui::IsItemClicked())
+      {
+         callback(ImGui::GetMousePos().x - rect.Min.x,ImGui::GetMousePos().y - rect.Min.y);
+      }
    } else {
       ImGui::Text("No preview available");
    }
 
    g_fbo_pos  = ImGui::GetItemRectMin();
-   g_fbo_size = ImGui::GetItemRectSize();
+   g_fbo_size = ImVec2(currentFBOw, currentFBOh);
    ImGui::End();
 }
 
@@ -121,6 +188,35 @@ void renderDockSpace()
    ImGuiID dockID = ImGui::GetID("MyDockspace");
    ImGui::DockSpace(dockID, ImVec2(0,0), ImGuiDockNodeFlags_PassthruCentralNode);
 
+   static bool init_dock = true;
+   if (init_dock)
+   {
+      init_dock = false;
+
+      // Effacer l'ancien dock
+      ImGui::DockBuilderRemoveNode(dockID);
+
+      // Créer un dockspace racine
+      ImGui::DockBuilderAddNode(
+          dockID,
+          ImGuiDockNodeFlags_DockSpace
+      );
+
+      // Taille = taille fenetre entière
+      ImGui::DockBuilderSetNodeSize(
+          dockID,
+          ImGui::GetIO().DisplaySize
+      );
+
+      // Pas de split → un seul dock, 100% de la zone
+      ImGuiID centralNode = dockID;
+
+      // Docker la fenêtre dedans
+      ImGui::DockBuilderDockWindow("Explorateur", centralNode);
+
+      // Finaliser la construction
+      ImGui::DockBuilderFinish(dockID);
+   }
    ImGui::End();
 }
 
@@ -183,13 +279,18 @@ void registerTexture() {
 void renderPreviewFractale(float sz,Fractale fractale) {
    ImVec2 p = ImGui::GetCursorScreenPos();
    ImTextureID texID = (ImTextureID)(intptr_t)prototypeTexture;
-   ImGui::GetWindowDrawList()->AddImage(
-    texID,
-    p,
-    ImVec2(p.x + sz, p.y + sz),
-    ImVec2(0,1), // UV min
-    ImVec2(1,0)  // UV max
-);
+   if (!glIsTexture((GLuint)(intptr_t)texID)) {
+      // draw placeholder or skip
+      ImGui::Text("[no tex]");
+   } else {
+      ImGui::GetWindowDrawList()->AddImage(
+          texID,
+          p,
+          ImVec2(p.x + sz, p.y + sz),
+          ImVec2(0,1), // UV min
+          ImVec2(1,0)  // UV max
+      );
+   }
    ImGui::Dummy(ImVec2(sz, sz)); // Reserver de l'espace
    ImGui::SameLine();
    if (ImGui::MenuItem(fractale.name))
@@ -277,19 +378,16 @@ void renderMenuBar() {
    ImGui::End();
 }
 
-
-static int fboWidth = 0, fboHeight = 0;
-
 void ensureFBOSize(int w, int h)
 {
     if (w <= 0 || h <= 0) return;
-    if (w == fboWidth && h == fboHeight) return;
-    fboWidth = w; fboHeight = h;
+    if (w == currentFBOw && h == currentFBOh) return;
+    currentFBOw = w; currentFBOh = h;
 
     // (re)create texture storage sized to w,h
     if (colorTex == 0) glGenTextures(1, &colorTex);
     glBindTexture(GL_TEXTURE_2D, colorTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fboWidth, fboHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, currentFBOw, currentFBOh, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -303,10 +401,9 @@ void ensureFBOSize(int w, int h)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-static int frameSize_x = 0, frameSize_y = 0;
 static float menuBarHeight = 47.0f;
 std::array<int,2> getFrameSize() {
-   return {frameSize_x, frameSize_y};
+   return {currentFBOw, currentFBOh};
 }
 
 float getMenuBarHeight() {return menuBarHeight;}
@@ -329,8 +426,8 @@ void beginRenderShaderToFBO()
     int w = std::max(1, (int)floorf(contentAvail.x + 0.5f));
     int h = std::max(1, (int)floorf(contentAvail.y + 0.5f));
     availSize = ImVec2((float)w, (float)h);
-   frameSize_x = w;
-   frameSize_y = h;
+   currentFBOw = w;
+   currentFBOh = h;
     // Ensure FBO size matches
     ensureFBOSize(w, h);
 

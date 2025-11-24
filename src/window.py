@@ -9,10 +9,16 @@ import src.cpp_backend as backend
 dragging = False
 last_mouse = None
 last_time = time.time()
+first_time = True
 
 def on_resize(window, width, height):
+    global first_time
     # Définir la zone de rendu (viewport) sur toute la surface de la fenêtre
-    glViewport(0, 0, width, height)
+    #glViewport(0, 0, width, height)
+
+    if not first_time:
+        backend.init_fbo(width, height)
+    first_time = False
 
 def scroll_callback(window, xoffset, yoffset):
     mx, my = get_cursor_pos(window)
@@ -25,13 +31,6 @@ def mouse_button_callback(window, button, action, mods):
         dragging = (action == PRESS)
         if dragging:
             last_mouse = get_cursor_pos(window)
-    if button == MOUSE_BUTTON_LEFT and action == PRESS:
-        mouse = get_cursor_pos(window)
-        posToWorld = Camera.instance().screen_to_world(mouse[0], mouse[1])
-        if posToWorld is None:
-            return
-        Interface.placeFractale(posToWorld[0], posToWorld[1])
-
 
 def cursor_pos_callback(window, xpos, ypos):
     global last_mouse
@@ -69,7 +68,6 @@ class Window:
         window_hint(OPENGL_PROFILE, OPENGL_CORE_PROFILE)
         window_hint(VISIBLE,GL_FALSE)
         window_hint(OPENGL_FORWARD_COMPAT, GL_TRUE)
-        window_hint(RESIZABLE,GL_FALSE)
 
         # Créer la fenêtre
         self.__window = create_window(width, height, title, None, None)

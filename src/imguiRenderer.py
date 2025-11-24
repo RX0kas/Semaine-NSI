@@ -73,6 +73,18 @@ class ImGuiRenderer:
                 imgui.separator_text("Dragging")
                 camera.pan_speed = imgui.slider_float("Pan Speed",camera.pan_speed,0.1,10)
                 camera.pan_smoothing = imgui.slider_float("Pan Smoothing",camera.pan_smoothing,0.0,1)
-                
-                
+            if imgui.collapsing_header("OpenGL"):
+                imgui.render_texture_information()
+            if imgui.collapsing_header("Undo/Redo API"):
+                t = imgui.get_turtle()
+                imgui.text(f"Memory for state: 104o")
+                imgui.text(f"Memory for redo stack: {t.get_memory_redo()}o")
+                imgui.text(f"Memory for undo stack: {t.get_memory_undo()}o")
+                imgui.text(f"Size for redo stack: {t.get_size_redo()}")
+                imgui.text(f"Size for undo stack: {t.get_size_undo()}")
+                if imgui.button("Undo") and t.can_undo():
+                    t.undo()
+                if imgui.button("Redo") and t.can_redo():
+                    t.redo()
+
             imgui.end()

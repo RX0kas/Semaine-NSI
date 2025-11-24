@@ -7,12 +7,23 @@ from src.imguiRenderer import ImGuiRenderer
 import src.cpp_backend as backend
 
 class Application:
+    def initialise_fractales(self):
+        #backend.ajouter_fractale("arbre","Arbre","prototype.png")
+        #backend.ajouter_fractale("arbre3","Arbre à 3 branches","prototype.png")
+        #backend.ajouter_fractale("courbe_de_koch_quadratique","Courbe de Koch Quadratique","prototype.png")
+        #backend.ajouter_fractale("courbe_de_koch_quadratique_inv","Courbe de Koch Quadratique Inversé","prototype.png")
+        #backend.ajouter_fractale("flocon_koch","Flocon de Koch","prototype.png")
+        #backend.ajouter_fractale("ligne_koch","Ligne de Koch","prototype.png")
+        pass
+
+
     def __init__(self):
         self.__fenetre = Window(800, 600, "Test fenetre")
         win = self.__fenetre.getWindow()
         glfw.make_context_current(win)
         backend.TurtleRenderer.initialize_glad()
         glfw.make_context_current(win)
+        self.initialise_fractales()
 
         from OpenGL.GL import glGetString, GL_VERSION
         try:
@@ -76,9 +87,11 @@ class Application:
 
             glfw.swap_buffers(self.__fenetre.getWindow())
 
+
         self.__imguiRenderer.shutdown()
         self.__turtleRenderer.cleanup()
         self.__fenetre.supprimer()
+        print("Stop")
 
     def stop(self):
         glfw.set_window_should_close(self.__fenetre.getWindow(), True)

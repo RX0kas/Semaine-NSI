@@ -4,13 +4,18 @@
 #define CPP_BACKEND_INTERFACE_HPP
 
 #include <array>
+#include <pybind11/functional.h>
 
+#include "imgui.h"
 #include "glad/glad.h"
+
+
 
 extern float color[3];
 
 void initFBO(int w, int h);
 
+void setExplorerClickedCallback(const std::function<void(int,int)> &callback);
 
 int getFBO();
 
@@ -21,6 +26,8 @@ void renderDockSpace();
 
 void beginShaderPreview();
 void endShaderPreview();
+
+void renderTextureInformation();
 
 void beginRenderShaderToFBO();
 void endRenderShaderToFBO();
@@ -37,7 +44,6 @@ void renderProgressBar();
 
 int getDepth();
 
-static unsigned int fractaleNum = 2;
 static GLuint prototypeTexture;
 static const char* prototypeTexturePath = "prototype.png";
 typedef struct {
@@ -46,5 +52,9 @@ typedef struct {
    const char* name;
    const char* id;
 } Fractale;
+
+static std::vector<Fractale> fractales;
+
+//void addFractale(const char* id,const char* name,const char* path);
 
 #endif //CPP_BACKEND_INTERFACE_HPP

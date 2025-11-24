@@ -177,6 +177,12 @@ void Turtle::pendown() {
 }
 
 void Turtle::nettoyer() {
+    if (!last_undo_is_clear) {
+        saveStateForUndo();
+        redo_stack.clear();
+        last_undo_is_clear = true;
+    }
+
     vertices.clear();
     path_ranges.clear();
     vertex_count = 0;
@@ -214,7 +220,116 @@ void Turtle::fillPathRanges(std::vector<PathRange>& out, bool include_open) cons
     }
 }
 
-// TurtleRenderer implementation
+void Turtle::saveStateForUndo() {
+    State s;
+    s.vertices = vertices;               // copies
+    s.path_ranges = path_ranges;
+    s.vertex_count = vertex_count;
+    s.current_path_start = current_path_start;
+    s.current_minx = current_minx;
+    s.current_miny = current_miny;
+    s.current_maxx = current_maxx;
+    s.current_maxy = current_maxy;
+    s.x = x; s.y = y; s.angle = angle;
+    s.pen_down = pen_down;
+    s.show_turtle = show_turtle;
+    s.turtle_size = turtle_size;
+    s.path_count_visible = path_count_visible;
+    s.path_count = path_count;
+
+    // push to undo stack
+    undo_stack.push_back(std::move(s));
+    // clamp undo stack size
+    if (undo_stack.size() > undo_limit) {
+        undo_stack.erase(undo_stack.begin(), undo_stack.begin() + (undo_stack.size() - undo_limit));
+    }
+    // clear redo on new action
+    redo_stack.clear();
+
+    last_undo_is_clear = false;
+}
+
+void Turtle::applyState(const State &st) {
+    vertices = st.vertices;
+    path_ranges = st.path_ranges;
+    vertex_count = st.vertex_count;
+    current_path_start = st.current_path_start;
+    current_minx = st.current_minx;
+    current_miny = st.current_miny;
+    current_maxx = st.current_maxx;
+    current_maxy = st.current_maxy;
+    x = st.x; y = st.y; angle = st.angle;
+    pen_down = st.pen_down;
+    show_turtle = st.show_turtle;
+    turtle_size = st.turtle_size;
+    path_count_visible = st.path_count_visible;
+    path_count = st.path_count;
+}
+
+void Turtle::undo() {
+    if (undo_stack.empty()) return;
+    // save current state to redo
+    State cur;
+    cur.vertices = vertices;
+    cur.path_ranges = path_ranges;
+    cur.vertex_count = vertex_count;
+    cur.current_path_start = current_path_start;
+    cur.current_minx = current_minx;
+    cur.current_miny = current_miny;
+    cur.current_maxx = current_maxx;
+    cur.current_maxy = current_maxy;
+    cur.x = x; cur.y = y; cur.angle = angle;
+    cur.pen_down = pen_down;
+    cur.show_turtle = show_turtle;
+    cur.turtle_size = turtle_size;
+    cur.path_count_visible = path_count_visible;
+    cur.path_count = path_count;
+
+    redo_stack.push_back(std::move(cur));
+
+    // pop last undo state and apply it
+    State prev = std::move(undo_stack.back());
+    undo_stack.pop_back();
+    applyState(prev);
+}
+
+void Turtle::redo() {
+    if (redo_stack.empty()) return;
+    // save current to undo stack
+    State cur;
+    cur.vertices = vertices;
+    cur.path_ranges = path_ranges;
+    cur.vertex_count = vertex_count;
+    cur.current_path_start = current_path_start;
+    cur.current_minx = current_minx;
+    cur.current_miny = current_miny;
+    cur.current_maxx = current_maxx;
+    cur.current_maxy = current_maxy;
+    cur.x = x; cur.y = y; cur.angle = angle;
+    cur.pen_down = pen_down;
+    cur.show_turtle = show_turtle;
+    cur.turtle_size = turtle_size;
+    cur.path_count_visible = path_count_visible;
+    cur.path_count = path_count;
+
+    undo_stack.push_back(std::move(cur));
+
+    State next = std::move(redo_stack.back());
+    redo_stack.pop_back();
+    applyState(next);
+}
+
+bool Turtle::canUndo() const { return !undo_stack.empty(); }
+bool Turtle::canRedo() const { return !redo_stack.empty(); }
+
+void Turtle::clearUndoHistory() {
+    undo_stack.clear();
+    redo_stack.clear();
+}
+
+//////////////////////
+/// TurtleRenderer ///
+//////////////////////
 bool TurtleRenderer::glad_initialized = false;
 
 // Minimal shader sources (very simple)
@@ -281,6 +396,8 @@ bool TurtleRenderer::initializeGlad() {
        ERROR_LOG("Failed to initialize GLAD");
         return false;
     }
+
+    registerTexture();
 
     glad_initialized = true;
     return true;
@@ -350,9 +467,6 @@ void TurtleRenderer::initializeGLResources() {
     glBindVertexArray(0);
 
     // Ensure primitive restart enabled when drawing; we enable/disable per-frame in render()
-
-    // Interface initialisation
-    registerTexture();
 }
 
 void TurtleRenderer::cleanup() {
