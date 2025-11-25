@@ -5,6 +5,8 @@ from src.window import Window
 from src.imguiRenderer import ImGuiRenderer
 
 import src.cpp_backend as backend
+from OpenGL.GL import *
+from numpy import frombuffer,flip,uint8,reshape
 
 class Application:
     def initialise_fractales(self):
@@ -44,12 +46,12 @@ class Application:
         glClearColor(0.5, 0.5, 0.5, 1)
 
         self.__interface = Interface()
+        
 
     def run(self):
         self.__fenetre.show()
-
-        # TODO: réallouer la texture FBO quand la taille change
-
+        
+        should_screen = False
         lastFrame = 0.0
         while not self.__fenetre.devrait_fermer():
             glfw.poll_events()
@@ -82,10 +84,16 @@ class Application:
 
             self.__interface.render()
             self.__imguiRenderer.show_debug_window(deltaTime, self.__camera)
-
+            should_screen = False
+            backend.begin("test")
+            if backend.button("Save Screenshot"):
+                should_screen = True
+            backend.end()
             self.__imguiRenderer.render()
-
+            
             glfw.swap_buffers(self.__fenetre.getWindow())
+            if should_screen:
+                self.save_screenshot("screenshot.png")
 
 
         self.__imguiRenderer.shutdown()
@@ -95,3 +103,16 @@ class Application:
 
     def stop(self):
         glfw.set_window_should_close(self.__fenetre.getWindow(), True)
+        
+    def save_screenshot(self, filename):
+        # obtenir la taille du framebuffer
+        w,h = backend.get_frame_size()
+        # lire les pixels
+        glPixelStorei(GL_PACK_ALIGNMENT, 1)
+        pixels = glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE)
+        from PIL import Image
+        arr = frombuffer(pixels,dtype=uint8,count=-1,offset=0).reshape(h, w, 4)
+        arr = flip(arr) # renverser parce que OpenGL lit du bas vers le haut
+        img = Image.fromarray(arr, 'RGBA')
+        img.save(filename)
+        print(f"Screenshoot saved to {filename}")

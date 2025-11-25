@@ -331,8 +331,7 @@ void Turtle::clearUndoHistory() {
 /// TurtleRenderer ///
 //////////////////////
 bool TurtleRenderer::glad_initialized = false;
-
-// Minimal shader sources (very simple)
+// TODO: Get these shaders from external files
 static const char* vertex_src = R"(
 #version 330 core
 layout(location = 0) in vec2 aPos;
