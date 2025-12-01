@@ -1,0 +1,29 @@
+#pragma once
+
+#ifndef SHADER_HPP
+#define SHADER_HPP
+
+#include <string>
+
+
+class Shader {
+public:
+   Shader(const std::string &vertexShaderPath, const std::string &fragmentShaderPath);
+
+   void useShader() const;
+   void setBool(const std::string& name, int value) const;
+   void setInt(const std::string& name, int value) const;
+   void setUInt(const std::string &name, unsigned int value) const;
+   void setFloat(const std::string& name, float value) const;
+   void setVec2f(const std::string& name, float v0, float v1) const;
+   void setVec3f(const std::string& name, float v0, float v1, float v2) const;
+   void setVec4f(const std::string& name, float v0, float v1, float v2,float v3) const;
+   void setMat4f(const std::string& name, float* v) const;
+   [[nodiscard]] unsigned int getProgram() const {return program;}
+private:
+   unsigned int program;
+};
+
+
+
+#endif //SHADER_HPP

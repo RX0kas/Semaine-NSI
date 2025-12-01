@@ -9,12 +9,14 @@
 #include <string>
 #include <pybind11/detail/common.h>
 
+#include "shader.hpp"
 #include "glad/glad.h"
 
 struct PathRange {
     int start;      // index in points
     int length;     // number of points
     float minx, miny, maxx, maxy;
+    float color[3]; // color for this specific path segment
 };
 
 struct State {
@@ -29,6 +31,7 @@ struct State {
    float turtle_size;
    unsigned int path_count_visible;
    unsigned int path_count;
+   float current_color[3];
 };
 
 class Turtle {
@@ -46,6 +49,10 @@ public:
    // pen
    void penup();
    void pendown();
+
+   // color control - now affects only future drawings
+   void setColor(float r, float g, float b);
+   std::array<float, 3> getColor() const;
 
    // undo / redo API
    void undo();
@@ -152,6 +159,7 @@ private:
    bool pen_down;
    bool show_turtle;
    float turtle_size;
+   float current_color[3]; // current color for new paths
 
    // geometry
    std::vector<float> vertices; // flat floats: x,y,x,y..
@@ -176,7 +184,7 @@ private:
 
 class TurtleRenderer {
 public:
-   TurtleRenderer();
+   TurtleRenderer(const char* fPath,const char* vPath);
    ~TurtleRenderer();
 
    void render();
@@ -192,13 +200,11 @@ public:
    static int getSizeChunk();
 private:
    void initializeGLResources();
-   void createDefaultShaders();
    void updateViewMatrix(); // fill view_matrix (col-major)
    void drawTurtle(const Turtle &t);
 
 private:
    // GL objects
-   GLuint shader_program = 0;
    GLuint path_vao = 0, path_vbo = 0, path_ebo = 0;
    GLuint turtle_vao = 0, turtle_vbo = 0;
 
@@ -209,6 +215,7 @@ private:
    bool initialized = false;
    static bool glad_initialized;
    const uint32_t primitive_restart_index = 0xFFFFFFFFu;
+   Shader s;
 };
 
 #endif //IMGUI_PY_BACKEND_TURTLE_RENDERER_HPP

@@ -9,9 +9,10 @@
 #include "imgui.h"
 #include "glad/glad.h"
 
+extern bool showScreenshotPreview;
+void openScreenshotPreview();
 
-
-extern float color[3];
+void updateColorEditTimer(float delta_time);
 
 void initFBO(int w, int h);
 
@@ -20,6 +21,9 @@ void setExplorerClickedCallback(const std::function<void(int,int)> &callback);
 int getFBO();
 
 void registerTexture();
+void saveFBOToFile(const char* filename);
+
+void renderScreenshotPreview();
 
 void renderMenuBar();
 void renderDockSpace();

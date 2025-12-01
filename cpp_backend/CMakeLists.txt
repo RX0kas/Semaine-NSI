@@ -57,6 +57,8 @@ set(SRC_FILES
         turtle_renderer.hpp
         interface.cpp
         interface.hpp
+        shader.cpp
+        shader.hpp
         glad.c
         imgui/imgui.cpp
         imgui/imgui_draw.cpp

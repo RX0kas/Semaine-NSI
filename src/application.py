@@ -1,3 +1,4 @@
+import OpenGL.GL
 import glfw
 from src.camera import Camera
 from src.interface import Interface
@@ -7,30 +8,19 @@ from src.imguiRenderer import ImGuiRenderer
 import src.cpp_backend as backend
 
 class Application:
-    def initialise_fractales(self):
-        #backend.ajouter_fractale("arbre","Arbre","prototype.png")
-        #backend.ajouter_fractale("arbre3","Arbre à 3 branches","prototype.png")
-        #backend.ajouter_fractale("courbe_de_koch_quadratique","Courbe de Koch Quadratique","prototype.png")
-        #backend.ajouter_fractale("courbe_de_koch_quadratique_inv","Courbe de Koch Quadratique Inversé","prototype.png")
-        #backend.ajouter_fractale("flocon_koch","Flocon de Koch","prototype.png")
-        #backend.ajouter_fractale("ligne_koch","Ligne de Koch","prototype.png")
-        pass
-
-
     def __init__(self):
         self.__fenetre = Window(800, 600, "Test fenetre")
         win = self.__fenetre.getWindow()
         glfw.make_context_current(win)
         backend.TurtleRenderer.initialize_glad()
         glfw.make_context_current(win)
-        self.initialise_fractales()
 
         from OpenGL.GL import glGetString, GL_VERSION
         try:
             print("PyOpenGL GL_VERSION:", glGetString(GL_VERSION))
         except Exception as e:
             print("PyOpenGL can't query GL_VERSION yet:", e)
-        self.__turtleRenderer = backend.TurtleRenderer()
+        self.__turtleRenderer = backend.TurtleRenderer("D:\\NSI\\SemaineNSI\\shaders\\turtle.frag.glsl","D:\\NSI\\SemaineNSI\\shaders\\turtle.vert.glsl")
         self.__imguiRenderer = ImGuiRenderer(win)
         self.__turtle = backend.Turtle()
         self.__turtle.show_turtle = True
@@ -58,6 +48,7 @@ class Application:
             lastFrame = currentFrame
 
             # Update functions
+            backend.update_color_edit_timer(deltaTime)
             self.__camera.update()
             self.__interface.update()
 
@@ -82,7 +73,9 @@ class Application:
 
             self.__interface.render()
             self.__imguiRenderer.show_debug_window(deltaTime, self.__camera)
+            backend.render_preview_screenshot()
 
+            OpenGL.GL.glBindFramebuffer(OpenGL.GL.GL_FRAMEBUFFER, 0)
             self.__imguiRenderer.render()
 
             glfw.swap_buffers(self.__fenetre.getWindow())

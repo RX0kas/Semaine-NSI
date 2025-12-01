@@ -7,8 +7,11 @@
 #include <ostream>
 #include <sstream>
 #include <GLFW/glfw3.h>
+#include <fstream>
 
+#include "ImFileDialog.h"
 #include "interface.hpp"
+#include "shader.hpp"
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
@@ -31,6 +34,11 @@ Turtle::Turtle(float ix, float iy, float iangle)
   vertex_count(0), current_path_start(-1),
   current_minx(0), current_miny(0), current_maxx(0), current_maxy(0)
 {
+    // Initialiser la couleur courante
+    current_color[0] = 1.0f;
+    current_color[1] = 1.0f;
+    current_color[2] = 1.0f;
+
     vertices.reserve(4096);
 
     start_new_path_if_needed();
@@ -42,6 +50,18 @@ Turtle::Turtle(float ix, float iy, float iangle)
 Turtle& Turtle::instance() {
     assert(s_instance != nullptr && "Turtle instance not created");
     return *s_instance;
+}
+
+// Color control methods - now only affects future drawings
+void Turtle::setColor(float r, float g, float b) {
+    current_color[0] = r;
+    current_color[1] = g;
+    current_color[2] = b;
+    //std::cout << "Current color: " << current_color[0] << " " << current_color[1] << " " << current_color[2] << std::endl;
+}
+
+std::array<float, 3> Turtle::getColor() const {
+    return {current_color[0], current_color[1], current_color[2]};
 }
 
 void Turtle::append_point_world(float wx, float wy) {
@@ -91,6 +111,10 @@ void Turtle::finalize_current_path_if_needed() {
             pr.miny = current_miny;
             pr.maxx = current_maxx;
             pr.maxy = current_maxy;
+            // Store the current color with this path segment
+            pr.color[0] = current_color[0];
+            pr.color[1] = current_color[1];
+            pr.color[2] = current_color[2];
             path_ranges.push_back(pr);
         }
         current_path_start = -1;
@@ -135,7 +159,7 @@ void Turtle::left(float angle_deg) {
 }
 
 void Turtle::normalizeAngle() {
-    // ramène l’angle dans [0, 360)
+    // ramène l'angle dans [0, 360)
     while (angle >= 360.0f) angle -= 360.0f;
     while (angle < 0.0f) angle += 360.0f;
 }
@@ -215,6 +239,10 @@ void Turtle::fillPathRanges(std::vector<PathRange>& out, bool include_open) cons
             pr.miny = current_miny;
             pr.maxx = current_maxx;
             pr.maxy = current_maxy;
+            // ADDED: For open path, use current color
+            pr.color[0] = current_color[0];
+            pr.color[1] = current_color[1];
+            pr.color[2] = current_color[2];
             out.push_back(pr);
         }
     }
@@ -236,6 +264,10 @@ void Turtle::saveStateForUndo() {
     s.turtle_size = turtle_size;
     s.path_count_visible = path_count_visible;
     s.path_count = path_count;
+    // AJOUT: Sauvegarder la couleur courante
+    s.current_color[0] = current_color[0];
+    s.current_color[1] = current_color[1];
+    s.current_color[2] = current_color[2];
 
     // push to undo stack
     undo_stack.push_back(std::move(s));
@@ -249,6 +281,7 @@ void Turtle::saveStateForUndo() {
     last_undo_is_clear = false;
 }
 
+// MODIFICATION: Restaurer la couleur courante depuis l'état
 void Turtle::applyState(const State &st) {
     vertices = st.vertices;
     path_ranges = st.path_ranges;
@@ -264,8 +297,13 @@ void Turtle::applyState(const State &st) {
     turtle_size = st.turtle_size;
     path_count_visible = st.path_count_visible;
     path_count = st.path_count;
+    // AJOUT: Restaurer la couleur courante
+    current_color[0] = st.current_color[0];
+    current_color[1] = st.current_color[1];
+    current_color[2] = st.current_color[2];
 }
 
+// MODIFICATION: Sauvegarder la couleur courante dans undo/redo
 void Turtle::undo() {
     if (undo_stack.empty()) return;
     // save current state to redo
@@ -284,6 +322,10 @@ void Turtle::undo() {
     cur.turtle_size = turtle_size;
     cur.path_count_visible = path_count_visible;
     cur.path_count = path_count;
+    // AJOUT: Sauvegarder la couleur courante
+    cur.current_color[0] = current_color[0];
+    cur.current_color[1] = current_color[1];
+    cur.current_color[2] = current_color[2];
 
     redo_stack.push_back(std::move(cur));
 
@@ -311,6 +353,10 @@ void Turtle::redo() {
     cur.turtle_size = turtle_size;
     cur.path_count_visible = path_count_visible;
     cur.path_count = path_count;
+    // AJOUT: Sauvegarder la couleur courante
+    cur.current_color[0] = current_color[0];
+    cur.current_color[1] = current_color[1];
+    cur.current_color[2] = current_color[2];
 
     undo_stack.push_back(std::move(cur));
 
@@ -330,58 +376,47 @@ void Turtle::clearUndoHistory() {
 //////////////////////
 /// TurtleRenderer ///
 //////////////////////
+
+TurtleRenderer::TurtleRenderer(const char *fPath, const char *vPath) : s(vPath,fPath) {
+    updateViewMatrix();
+
+    // Setup ImFileDialog
+    ifd::FileDialog::Instance().CreateTexture = [](uint8_t* data, int w, int h, char fmt) -> void* {
+        GLuint tex = 0;
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            w,
+            h,
+            0,
+            (fmt == 0) ? GL_BGRA : GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            data
+        );
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        return (void*)(uintptr_t)tex;
+    };
+
+    ifd::FileDialog::Instance().DeleteTexture = [](void* tex) {
+        GLuint texID = (GLuint)(uintptr_t)tex;
+        glDeleteTextures(1, &texID);
+    };
+}
+
+
 bool TurtleRenderer::glad_initialized = false;
-
-// Minimal shader sources (very simple)
-static const char* vertex_src = R"(
-#version 330 core
-layout(location = 0) in vec2 aPos;
-uniform mat3 viewmatrix;
-void main() {
-    vec3 p = viewmatrix * vec3(aPos, 1.0);
-    gl_Position = vec4(p.xy, 0.0, 1.0);
-}
-)";
-
-static const char* fragment_src = R"(
-#version 330 core
-out vec4 FragColor;
-uniform vec4 u_color;
-void main() {
-    FragColor = u_color;
-}
-)";
-
-// Simple compile helpers (replace by your project's Shader if available)
-static GLuint compileShader(GLenum type, const char* src) {
-    GLuint s = glCreateShader(type);
-    glShaderSource(s, 1, &src, nullptr);
-    glCompileShader(s);
-    GLint ok = 0; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
-    if (!ok) {
-        GLint len=0; glGetShaderiv(s, GL_INFO_LOG_LENGTH, &len);
-        std::string log(len, '\0'); glGetShaderInfoLog(s, len, nullptr, log.data());
-        ERROR_LOG("Shader compile error: " << log);
-        glDeleteShader(s);
-        return 0;
-    }
-    return s;
-}
-static GLuint linkProgram(GLuint v, GLuint f) {
-    GLuint p = glCreateProgram();
-    glAttachShader(p, v); glAttachShader(p, f);
-    glLinkProgram(p);
-    GLint ok=0; glGetProgramiv(p, GL_LINK_STATUS, &ok);
-    if (!ok) {
-        GLint len=0; glGetProgramiv(p, GL_INFO_LOG_LENGTH, &len);
-        std::string log(len, '\0'); glGetProgramInfoLog(p, len, nullptr, log.data());
-        ERROR_LOG("Program link error: " << log);
-        glDeleteProgram(p);
-        return 0;
-    }
-    glDetachShader(p, v); glDetachShader(p, f);
-    return p;
-}
 
 int TurtleRenderer::getSizeChunk() {
     return SIZE_OF_CHUNK;
@@ -403,10 +438,6 @@ bool TurtleRenderer::initializeGlad() {
     return true;
 }
 
-TurtleRenderer::TurtleRenderer() {
-    updateViewMatrix();
-}
-
 TurtleRenderer::~TurtleRenderer() {
     cleanup();
 }
@@ -414,24 +445,11 @@ TurtleRenderer::~TurtleRenderer() {
 void TurtleRenderer::ensureInitialized() {
     if (initialized) return;
     initializeGlad();
-    createDefaultShaders();
     initializeGLResources();
     updateViewMatrix();
     initialized = true;
 }
 
-void TurtleRenderer::createDefaultShaders() {
-    if (shader_program != 0) return;
-    GLuint vs = compileShader(GL_VERTEX_SHADER, vertex_src);
-    GLuint fs = compileShader(GL_FRAGMENT_SHADER, fragment_src);
-    if (!vs || !fs) {
-        ERROR_LOG("Failed to compile default shaders");
-        return;
-    }
-    shader_program = linkProgram(vs, fs);
-    glDeleteShader(vs); glDeleteShader(fs);
-    if (!shader_program) ERROR_LOG("Failed to link default shader program");
-}
 
 void TurtleRenderer::initializeGLResources() {
     // Create VAO/VBO/EBO for path
@@ -477,7 +495,7 @@ void TurtleRenderer::cleanup() {
     if (turtle_vbo) { glDeleteBuffers(1, &turtle_vbo); turtle_vbo = 0; }
     if (turtle_vao) { glDeleteVertexArrays(1, &turtle_vao); turtle_vao = 0; }
 
-    if (shader_program) { glDeleteProgram(shader_program); shader_program = 0; }
+    if (s.getProgram()) { glDeleteProgram(s.getProgram()); }
     initialized = false;
 }
 
@@ -527,15 +545,15 @@ void TurtleRenderer::drawTurtle(const Turtle &t) {
         worldVerts[i*2+1] = wy;
     }
 
-    glUseProgram(shader_program);
-    GLint viewLoc = glGetUniformLocation(shader_program, "viewmatrix");
-    if (viewLoc != -1) glUniformMatrix3fv(viewLoc, 1, GL_FALSE, view_matrix);
+    s.useShader();
+    s.setMat4f("viewmatrix",view_matrix);
+
 
     glBindVertexArray(turtle_vao);
     glBindBuffer(GL_ARRAY_BUFFER, turtle_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(worldVerts), worldVerts, GL_DYNAMIC_DRAW);
 
-    glUniform4f(glGetUniformLocation(shader_program, "u_color"), 1.0f, 0.0f, 0.0f, 1.0f);
+    s.setVec4f("u_color", 1.0f, 0.0f, 0.0f, 1.0f);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glBindVertexArray(0);
@@ -639,9 +657,8 @@ void TurtleRenderer::render() {
     }
 
     // 4) upload + draw
-    glUseProgram(shader_program);
-    GLint viewLoc = glGetUniformLocation(shader_program, "viewmatrix");
-    if (viewLoc != -1) glUniformMatrix3fv(viewLoc, 1, GL_FALSE, view_matrix);
+    glUseProgram(s.getProgram());
+    s.setMat4f("viewmatrix",view_matrix);
 
     glBindVertexArray(path_vao);
 
@@ -661,9 +678,25 @@ void TurtleRenderer::render() {
     glEnable(GL_PRIMITIVE_RESTART);
     glPrimitiveRestartIndex(primitive_restart_index);
 
-    glUniform4f(glGetUniformLocation(shader_program, "u_color"), color[0], color[1], color[2], 1.0f);
-    GLsizei indices_count = static_cast<GLsizei>(indices.size());
-    glDrawElements(GL_LINE_STRIP, indices_count, GL_UNSIGNED_INT, static_cast<const void *>(nullptr));
+    // Draw each path segment with its own stored color
+    size_t indices_offset = 0;
+    for (const PathRange* pptr : visible_paths) {
+        const PathRange &pr = *pptr;
+        int lenPts = pr.length;
+        if (lenPts <= 1) {
+            indices_offset += lenPts + 1; // +1 for restart index
+            continue;
+        }
+
+        // Use the color stored in the PathRange
+        s.setVec4f("u_color",pr.color[0], pr.color[1], pr.color[2], 1.0f);
+
+        // Draw this specific path segment
+        glDrawElements(GL_LINE_STRIP, lenPts, GL_UNSIGNED_INT,
+                       (const void*)(indices_offset * sizeof(uint32_t)));
+
+        indices_offset += lenPts + 1; // Move to next segment
+    }
 
     glDisable(GL_PRIMITIVE_RESTART);
 

@@ -75,6 +75,9 @@ class ImGuiRenderer:
                 camera.pan_smoothing = imgui.slider_float("Pan Smoothing",camera.pan_smoothing,0.0,1)
             if imgui.collapsing_header("OpenGL"):
                 imgui.render_texture_information()
+                if imgui.button("screenshot"):
+                    imgui.open_preview_screenshot()
+
             if imgui.collapsing_header("Undo/Redo API"):
                 t = imgui.get_turtle()
                 imgui.text(f"Memory for state: 104o")

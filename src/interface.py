@@ -42,4 +42,6 @@ class Interface:
         elif selectedFractalesId == "ligne_koch":
             from src.fractales.ligne_koch import ligne_koch
             ligne_koch(get_profondeur())
+        t.penup()
+        t.pendown()
         setShowProgress(False)

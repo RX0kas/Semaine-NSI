@@ -1,12 +1,17 @@
 #include "interface.hpp"
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define BIT(x) (1 << x)
 
 #include "imgui.h"
+#include <filesystem>
 #include <iostream>
 #include <ostream>
 #include <GLFW/glfw3.h>
 
+#include "ImFileDialog.h"
 #include "imgui_internal.h"
+#include "stb_image_write.h"
 #include "stb_image.h"
 #include "turtle_renderer.hpp"
 
@@ -20,6 +25,12 @@ Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","li
 GLuint fbo = 0;
 int currentFBOw = 0;
 int currentFBOh = 0;
+
+bool showScreenshotPreview = false;
+
+void openScreenshotPreview() {
+   showScreenshotPreview = true;
+}
 
 int getFBO() {
    return fbo;
@@ -57,6 +68,87 @@ void initFBO(int w, int h) {
       printf("FBO error\n");
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void saveFBOToFile(const char* filename)
+{
+   if (fbo == 0 || colorTex == 0) {
+      printf("FBO non initialisé.\n");
+      return;
+   }
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+   int w = currentFBOw;
+   int h = currentFBOh;
+
+   if (w <= 0 || h <= 0) {
+      printf("Dimensions FBO invalides (%d x %d).\n", w, h);
+      return;
+   }
+
+   std::vector<unsigned char> pixels(w * h * 4);
+
+   glReadPixels(
+       0, 0, w, h,
+       GL_RGBA, GL_UNSIGNED_BYTE,
+       pixels.data()
+   );
+
+   // Flip vertical (OpenGL origin = bottom-left)
+   for (int y = 0; y < h / 2; ++y) {
+      int opposite = h - 1 - y;
+      for (int x = 0; x < w * 4; ++x) {
+         std::swap(pixels[y * w * 4 + x], pixels[opposite * w * 4 + x]);
+      }
+   }
+
+   if (stbi_write_png(filename, w, h, 4, pixels.data(), w * 4)) {
+      printf("Image sauvegardée : %s (%dx%d)\n", filename, w, h);
+   } else {
+      printf("Échec de l’enregistrement de %s\n", filename);
+   }
+
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void renderScreenshotPreview() {
+   if (showScreenshotPreview) {
+      static char name[256] = "capture.png";
+      ImGui::SetNextWindowDockID(0, ImGuiCond_Always); // interdit le docking
+      ImGui::SetNextWindowCollapsed(false);
+      ImGui::SetNextWindowFocus();
+      ImGui::Begin("Prévisualisation Screenshot", &showScreenshotPreview,
+                   ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
+
+      // Affichage de la texture FBO
+      ImVec2 size(static_cast<float>(currentFBOw), static_cast<float>(currentFBOh));
+
+      // Redimensionne automatiquement si trop grand
+      float maxW = 600.0f;
+      float maxH = 400.0f;
+      float scale = std::min(maxW / size.x, maxH / size.y);
+      if (scale < 1.0f) size = ImVec2(size.x * scale, size.y * scale);
+
+      // IMPORTANT : inverser les UV en Y pour afficher correctement la texture OpenGL
+      ImGui::Image((ImTextureID)(intptr_t)colorTex, size,
+                   ImVec2(0,1), ImVec2(1,0));
+
+      ImGui::Separator();
+
+      // Boutons
+      if (ImGui::Button("Enregistrer")) {
+         saveFBOToFile(name);
+      }
+
+      ImGui::SameLine();
+      if (ImGui::Button("Annuler")) {
+         showScreenshotPreview = false;
+      }
+      ImGui::SameLine();
+      ImGui::InputTextWithHint("Nom","Nom du fichier",name,256,ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_ElideLeft); // TODO: find a better way
+      ImGui::End();
+   }
 }
 
 void renderTextureInformation() {
@@ -133,7 +225,7 @@ void endShaderPreview() {
          initFBO(currentFBOw, currentFBOh);
       }
 
-      ImTextureID texID = (ImTextureID)(intptr_t)colorTex;
+      auto texID = (ImTextureID)(intptr_t)colorTex;
       ImGui::Image(texID, availSize, ImVec2(0, 1), ImVec2(1, 0));
 
       ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -319,12 +411,16 @@ void renderPreviewFractalesMenu() {
    }
 }
 
-float color[3] = {1,1,1};
+
 static int profondeur = 5;
 int getDepth() {
    return profondeur;
 }
 
+bool color_changed = false;
+std::array<float, 3> pending_color = {1.0f, 1.0f, 1.0f};
+float color_edit_timer = 0.0f;
+constexpr float COLOR_EDIT_TIMEOUT = 0.5f; // 500ms de délai
 
 void renderMenuBar() {
    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
@@ -348,7 +444,28 @@ void renderMenuBar() {
    taille = std::max(taille,0.0f);
    ImGui::EndDisabled();
    ImGui::SameLine();
-   ImGui::ColorEdit3("Couleur", color, ImGuiColorEditFlags_NoInputs);
+
+   // Utiliser la couleur courante de la tortue
+   std::array<float, 3> c = Turtle::instance().getColor();
+   float color[3] = {c[0],c[1],c[2]};
+
+   bool color_edited = ImGui::ColorEdit3("Couleur", color, ImGuiColorEditFlags_NoInputs);
+
+   if (color_edited) {
+       // Stocker la couleur temporairement
+       pending_color = {color[0], color[1], color[2]};
+       color_changed = true;
+   }
+
+   // Appliquer la couleur seulement quand l'éditeur est désactivé
+   if (ImGui::IsItemDeactivated() && color_changed) {
+       // Sauvegarder l'état avant de changer la couleur
+       Turtle::instance().saveStateForUndo();
+       // Appliquer la nouvelle couleur
+       Turtle::instance().setColor(pending_color[0], pending_color[1], pending_color[2]);
+       color_changed = false;
+   }
+
    ImGui::SameLine();
    ImGui::BeginDisabled();
    float pos[2] = {0,0};
@@ -376,6 +493,17 @@ void renderMenuBar() {
       Turtle::instance().nettoyer();
    }
    ImGui::End();
+}
+
+void updateColorEditTimer(float delta_time) {
+    if (color_changed && color_edit_timer > 0) {
+        color_edit_timer -= delta_time;
+        if (color_edit_timer <= 0) {
+            // Timeout - appliquer la couleur
+            Turtle::instance().setColor(pending_color[0], pending_color[1], pending_color[2]);
+            color_changed = false;
+        }
+    }
 }
 
 void ensureFBOSize(int w, int h)

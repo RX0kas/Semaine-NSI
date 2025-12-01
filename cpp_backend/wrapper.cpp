@@ -311,6 +311,11 @@ PYBIND11_MODULE(cpp_backend, m) {
         bool ihd = io.ConfigFlags & ImGuiConfigFlags_DockingEnable;
         ImGui::Checkbox("IMGUI_HAS_DOCK",&ihd);
     });
+    m.def("update_color_edit_timer", &updateColorEditTimer, py::arg("delta_time"));
+    m.def("save_fbo_to_file", &saveFBOToFile);
+    m.def("open_preview_screenshot", &openScreenshotPreview);
+    m.def("render_preview_screenshot",&renderScreenshotPreview);
+
 
 
     ////////////
@@ -330,6 +335,9 @@ PYBIND11_MODULE(cpp_backend, m) {
         .def("pendown", &Turtle::pendown)
         .def("up", &Turtle::penup)
         .def("down", &Turtle::pendown)
+        // ADDED: Color control
+        .def("set_color", &Turtle::setColor, py::arg("r"), py::arg("g"), py::arg("b"))
+        .def("get_color", &Turtle::getColor)
         // Propriétés
         .def_property_readonly("x", &Turtle::getX)
         .def_property_readonly("y", &Turtle::getY)
@@ -360,7 +368,7 @@ PYBIND11_MODULE(cpp_backend, m) {
 
     // --- Classe TurtleRenderer ---
     py::class_<TurtleRenderer>(m, "TurtleRenderer")
-        .def(py::init<>())
+        .def(py::init<const char*,const char*>(),py::arg("fPath"),py::arg("vPath"))
         .def("render", &TurtleRenderer::render)
         .def("cleanup", &TurtleRenderer::cleanup)
         .def("set_camera", &TurtleRenderer::setCamera,
