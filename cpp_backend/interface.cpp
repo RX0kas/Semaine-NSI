@@ -173,7 +173,7 @@ void renderTextureInformation() {
        GL_COLOR_ATTACHMENT0,
        GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME,
        &tex
-   );
+   );    
 
    GLint w, h;
    glBindTexture(GL_TEXTURE_2D, tex);
