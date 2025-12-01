@@ -1,15 +1,14 @@
 #include "interface.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#define BIT(x) (1 << x)
 
+#include <nfd.h>
 #include "imgui.h"
 #include <filesystem>
 #include <iostream>
 #include <ostream>
 #include <GLFW/glfw3.h>
 
-#include "ImFileDialog.h"
 #include "imgui_internal.h"
 #include "stb_image_write.h"
 #include "stb_image.h"
@@ -138,7 +137,12 @@ void renderScreenshotPreview() {
 
       // Boutons
       if (ImGui::Button("Enregistrer")) {
-         saveFBOToFile(name);
+         nfdchar_t* path = nullptr;
+         nfdu8filteritem_t filters[1] = { { "Image", "png" }};
+         if (NFD_SaveDialog(&path, filters, 1,nullptr,"capture.png") == NFD_OKAY) {
+            saveFBOToFile(path);
+            free(path);
+         }
       }
 
       ImGui::SameLine();
@@ -146,7 +150,7 @@ void renderScreenshotPreview() {
          showScreenshotPreview = false;
       }
       ImGui::SameLine();
-      ImGui::InputTextWithHint("Nom","Nom du fichier",name,256,ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_ElideLeft); // TODO: find a better way
+
       ImGui::End();
    }
 }

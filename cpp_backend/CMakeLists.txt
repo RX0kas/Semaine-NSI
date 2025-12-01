@@ -90,3 +90,6 @@ set_target_properties(cpp_backend PROPERTIES
         PREFIX ""
         SUFFIX ".pyd"
 )
+
+add_subdirectory(nativefiledialog-extended)
+target_link_libraries(cpp_backend PRIVATE nfd)
