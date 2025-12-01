@@ -26,6 +26,11 @@ int currentFBOw = 0;
 int currentFBOh = 0;
 
 bool showScreenshotPreview = false;
+bool inverted = false;
+bool isPrinterCompatible() {
+   return inverted;
+}
+
 
 void openScreenshotPreview() {
    showScreenshotPreview = true;
@@ -150,7 +155,7 @@ void renderScreenshotPreview() {
          showScreenshotPreview = false;
       }
       ImGui::SameLine();
-
+      ImGui::Checkbox("Adapter à l'impression",&inverted);
       ImGui::End();
    }
 }
@@ -566,7 +571,8 @@ void beginRenderShaderToFBO()
     // bind FBO and viewport
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glViewport(0, 0, w, h);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+   if (isPrinterCompatible()) glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+   else glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 

@@ -9,6 +9,8 @@
 #include "imgui.h"
 #include "glad/glad.h"
 
+bool isPrinterCompatible();
+
 extern bool showScreenshotPreview;
 void openScreenshotPreview();
 

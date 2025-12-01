@@ -624,6 +624,7 @@ void TurtleRenderer::render() {
     // 4) upload + draw
     glUseProgram(s.getProgram());
     s.setMat4f("viewmatrix",view_matrix);
+    s.setBool("inverted",isPrinterCompatible());
 
     glBindVertexArray(path_vao);
 
