@@ -20,7 +20,7 @@ class Application:
             print("PyOpenGL GL_VERSION:", glGetString(GL_VERSION))
         except Exception as e:
             print("PyOpenGL can't query GL_VERSION yet:", e)
-        self.__turtleRenderer = backend.TurtleRenderer("D:\\NSI\\SemaineNSI\\shaders\\turtle.frag.glsl","D:\\NSI\\SemaineNSI\\shaders\\turtle.vert.glsl")
+        self.__turtleRenderer = backend.TurtleRenderer("shaders\\turtle.frag.glsl","shaders\\turtle.vert.glsl")
         self.__imguiRenderer = ImGuiRenderer(win)
         self.__turtle = backend.Turtle()
         self.__turtle.show_turtle = True

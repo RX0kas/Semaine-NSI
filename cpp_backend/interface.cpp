@@ -14,12 +14,13 @@
 #include "stb_image.h"
 #include "turtle_renderer.hpp"
 
-Fractale arbre = {prototypeTexture,prototypeTexturePath,"Arbre","arbre"};
+Fractale arbre = {prototypeTexture,prototypeTexturePath,"Arbre","arbre"}; // TODO get the screen
 Fractale arbre3 = {prototypeTexture,prototypeTexturePath,"Arbre à 3 branches","arbre3"};
 Fractale courbe_de_koch_quadratique = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique","courbe_de_koch_quadratique"};
 Fractale courbe_de_koch_quadratique_inv = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique Inversé","courbe_de_koch_quadratique_inv"};
 Fractale flocon_koch = {prototypeTexture,prototypeTexturePath,"Flocon de Koch","flocon_koch"};
 Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","ligne_koch"};
+
 
 GLuint fbo = 0;
 int currentFBOw = 0;

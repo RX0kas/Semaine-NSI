@@ -12,7 +12,7 @@ void main() {
     }
 
     if (inverted)
-        FragColor = vec4(.0,.0,.0,1.0);
+        FragColor = vec4(1-u_color.rbg,1.0);
     else
-        FragColor = vec4(1.0-u_color.rbg,1.0);
+        FragColor = vec4(u_color.rbg,1.0);
 }
