@@ -2,7 +2,6 @@ venv_semaine_nsi/
 .venv/
 .idea/
 __pycache__
-*.ini
 cpp_backend/build/
 cpp_backend/cmake-build-debug
 cpp_backend/cmake-build-release

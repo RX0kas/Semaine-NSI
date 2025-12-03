@@ -38,8 +38,6 @@ class Application:
     def run(self):
         self.__fenetre.show()
 
-        # TODO: réallouer la texture FBO quand la taille change
-
         lastFrame = 0.0
         while not self.__fenetre.devrait_fermer():
             glfw.poll_events()
@@ -61,15 +59,16 @@ class Application:
             self.__imguiRenderer.newFrame()
 
             backend.render_dock_space()
+
             # start DrawShaderWindow
-            backend.begin_shader_preview()
             backend.render_menu_bar()
+            backend.begin_shader_preview()
 
             backend.begin_render_shader_to_fbo()
             self.__turtleRenderer.render()
             backend.end_render_shader_to_fbo()
 
-            backend.end_shader_preview() # end DrawShaderWindow
+            backend.end_shader_preview()  # end DrawShaderWindow
 
             self.__interface.render()
             self.__imguiRenderer.show_debug_window(deltaTime, self.__camera)
@@ -79,7 +78,6 @@ class Application:
             self.__imguiRenderer.render()
 
             glfw.swap_buffers(self.__fenetre.getWindow())
-
 
         self.__imguiRenderer.shutdown()
         self.__turtleRenderer.cleanup()

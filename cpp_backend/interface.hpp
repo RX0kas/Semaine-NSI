@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "glad/glad.h"
 
+float getAngle();
 bool isPrinterCompatible();
 
 extern bool showScreenshotPreview;
@@ -41,7 +42,6 @@ void endRenderShaderToFBO();
 const char* getSelectedFractalesID();
 void setSelectedFractalesID(const char* id);
 std::array<float, 2> getFBOPos();
-std::array<float, 2> getFBOSize();
 std::array<int, 2> getFrameSize();
 float getMenuBarHeight();
 
@@ -52,15 +52,16 @@ int getDepth();
 
 static GLuint prototypeTexture;
 static const char* prototypeTexturePath = "prototype.png";
+static GLuint arbreTexture;
+static const char* arbreTexturePath = "arbre_screen.png";
 typedef struct {
    GLuint TextureID;
    const char* TexturePath;
    const char* name;
    const char* id;
+   int numID;
 } Fractale;
 
 static std::vector<Fractale> fractales;
-
-//void addFractale(const char* id,const char* name,const char* path);
 
 #endif //CPP_BACKEND_INTERFACE_HPP

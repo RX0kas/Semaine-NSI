@@ -162,6 +162,7 @@ PYBIND11_MODULE(cpp_backend, m) {
     m.def("get_profondeur",&getDepth);
     m.def("renderProgressBar",&renderProgressBar);
     m.def("setShowProgress",&setShowProgress,py::arg("show"));
+    m.def("get_angle",&getAngle);
 
     ///////////
     // ImGui //
@@ -171,7 +172,7 @@ PYBIND11_MODULE(cpp_backend, m) {
     m.def("end_shader_preview",&endShaderPreview);
 
     m.def("get_fbo_screen_pos",&getFBOPos);
-    m.def("get_fbo_screen_size",&getFBOSize);
+    m.def("get_fbo_screen_size",&getFrameSize);
     m.def("get_frame_size",&getFrameSize);
     m.def("get_menu_bar_height",&getMenuBarHeight);
     m.def("set_explorer_clicked_callback",&setExplorerClickedCallback,py::arg("callback"));

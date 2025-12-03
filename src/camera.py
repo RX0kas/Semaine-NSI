@@ -70,25 +70,24 @@ class Camera:
         Interface.placeFractale(posToWorld[0], posToWorld[1])
 
     # ------------------ Coordinate conversions ------------------
-    def screen_to_world(self, mouse_x: float, mouse_y: float) -> np.ndarray:
-        """Convertit des coordonnées écran (pixels) en coordonnées monde.
+    def screen_to_world(self, mouse_x: float, mouse_y: float):
+        w, h = backend.get_frame_size()
 
-        Coordinate system: normalized device coords x,y in [-1,1], y up.
-        """
-        w,h = backend.get_frame_size()
-
-        if mouse_y < 0 or mouse_x <0:
-            return None
-
+        # Sécurité basique
         if w <= 0 or h <= 0:
             return np.array([self.x, self.y], dtype=np.float64)
 
+        # Optionnel : ignorer les clics hors FBO
+        if mouse_x < 0 or mouse_y < 0 or mouse_x > w or mouse_y > h:
+            return None
+
+        # Screen → NDC
         nx = (mouse_x / w) * 2.0 - 1.0
         ny = 1.0 - (mouse_y / h) * 2.0
 
+        # NDC → World (inverse de la matrice C++)
         world_x = (nx / self.zoom) + self.x
         world_y = (ny / self.zoom) + self.y
-
 
         return np.array([world_x, world_y], dtype=np.float64)
 

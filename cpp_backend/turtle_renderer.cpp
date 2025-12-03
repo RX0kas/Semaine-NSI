@@ -473,18 +473,19 @@ void TurtleRenderer::setCamera(float camera_x_, float camera_y_, float zoom_) {
 
 // view_matrix column-major: [ m00 m10 m20; m01 m11 m21; m02 m12 m22 ] in memory
 // we want matrix: [s 0 tx; 0 s ty; 0 0 1] so memory (col-major) = {s,0,0, 0,s,0, tx,ty,1}
-void TurtleRenderer::updateViewMatrix() {
+void TurtleRenderer::updateViewMatrix()
+{
     float s = zoom;
 
-    // Translation du modèle vers la caméra
     float tx = -camera_x * s;
     float ty = -camera_y * s;
 
-    // Column-major
-    view_matrix[0] = s;     view_matrix[1] = 0.0f; view_matrix[2] = 0.0f;
-    view_matrix[3] = 0.0f;  view_matrix[4] = s;    view_matrix[5] = 0.0f;
-    view_matrix[6] = tx;    view_matrix[7] = ty;   view_matrix[8] = 1.0f;
+    // Column-major: [ m00 m10 m20, m01 m11 m21, m02 m12 m22 ]
+    view_matrix[0] = s;     view_matrix[1] = 0.0f;  view_matrix[2] = 0.0f;
+    view_matrix[3] = 0.0f;  view_matrix[4] = s;     view_matrix[5] = 0.0f;
+    view_matrix[6] = tx;    view_matrix[7] = ty;    view_matrix[8] = 1.0f;
 }
+
 
 void TurtleRenderer::drawTurtle(const Turtle &t) {
     // Draw a small triangle oriented by t.getAngle() at (t.getX(), t.getY())
@@ -549,11 +550,28 @@ static bool aabbVisible(const PathRange &pr, const float view[9]) {
         ndc_max_x = std::max(ndc_max_x, nx);
         ndc_max_y = std::max(ndc_max_y, ny);
     }
-    // quick reject if outside [-1,1] in x or y
-    if (ndc_max_x < -1.0f || ndc_min_x > 1.0f) return false;
-    if (ndc_max_y < -1.0f || ndc_min_y > 1.0f) return false;
+
+    // Compute a small epsilon in NDC based on framebuffer size (1 pixel ~= 2.0 / width in NDC)
+    int fb_w = 0, fb_h = 0;
+    {
+        auto fs = getFrameSize(); // from interface.hpp (returns currentFBOw/currentFBOh)
+        fb_w = fs[0];
+        fb_h = fs[1];
+    }
+    float eps_x = 0.01f; // fallback small epsilon if sizes unknown
+    float eps_y = 0.01f;
+    if (fb_w > 0) eps_x = 2.0f / static_cast<float>(fb_w); // one pixel in NDC x
+    if (fb_h > 0) eps_y = 2.0f / static_cast<float>(fb_h); // one pixel in NDC y
+
+    // use slightly larger margin to be safe (covers antialiasing / line width)
+    float eps = std::max(eps_x, eps_y) * 1.5f;
+
+    // quick reject if outside [-1,1] in x or y (with epsilon margin)
+    if (ndc_max_x < -1.0f - eps || ndc_min_x > 1.0f + eps) return false;
+    if (ndc_max_y < -1.0f - eps || ndc_min_y > 1.0f + eps) return false;
     return true;
 }
+
 
 
 void TurtleRenderer::render() {
@@ -575,14 +593,14 @@ void TurtleRenderer::render() {
         return;
     }
 
-    // 2) cull per path using AABB and view_matrix
+    // 2) pas de culling : tout est considéré visible
     std::vector<const PathRange*> visible_paths;
     visible_paths.reserve(paths.size());
     for (const auto &pr : paths) {
-        if (aabbVisible(pr, view_matrix)) visible_paths.push_back(&pr);
+        visible_paths.push_back(&pr);
     }
+
     if (visible_paths.empty()) {
-        // nothing visible, but draw turtle
         if (t.isShowTurtle()) drawTurtle(t);
         return;
     }
