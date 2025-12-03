@@ -2,6 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
+#include <math.h>
 #include <nfd.h>
 #include "imgui.h"
 #include <filesystem>
@@ -14,13 +15,19 @@
 #include "stb_image.h"
 #include "turtle_renderer.hpp"
 
-Fractale arbre = {prototypeTexture,prototypeTexturePath,"Arbre","arbre"}; // TODO get the screen
-Fractale arbre3 = {prototypeTexture,prototypeTexturePath,"Arbre à 3 branches","arbre3"};
-Fractale courbe_de_koch_quadratique = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique","courbe_de_koch_quadratique"};
-Fractale courbe_de_koch_quadratique_inv = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique Inversé","courbe_de_koch_quadratique_inv"};
-Fractale flocon_koch = {prototypeTexture,prototypeTexturePath,"Flocon de Koch","flocon_koch"};
-Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","ligne_koch"};
+Fractale arbre = {arbreTexture,arbreTexturePath,"Arbre","arbre",0};
+Fractale arbre3 = {prototypeTexture,prototypeTexturePath,"Arbre à 3 branches","arbre3",1};
+Fractale courbe_de_koch_quadratique = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique","courbe_de_koch_quadratique",2};
+Fractale courbe_de_koch_quadratique_inv = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique Inversé","courbe_de_koch_quadratique_inv",3};
+Fractale flocon_koch = {prototypeTexture,prototypeTexturePath,"Flocon de Koch","flocon_koch",4};
+Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","ligne_koch",5};
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+static float angle = 0;
+float getAngle() {return angle * (180.0 / M_PI);}
 
 GLuint fbo = 0;
 int currentFBOw = 0;
@@ -205,52 +212,73 @@ void setExplorerClickedCallback(const std::function<void(int,int)> &c) {
    callback = c;
 }
 
-
-static ImVec2 availSize = ImVec2(-1, -1);
-static ImGuiID explorerID;
-
-ImGuiID getExplorerID() {
-   return explorerID;
-}
-
 void beginShaderPreview() {
-   ImGuiWindowFlags winFlags = ImGuiWindowFlags_NoTitleBar |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+   ImGuiWindowFlags winFlags =
+       ImGuiWindowFlags_NoTitleBar |
+       ImGuiWindowFlags_NoCollapse |
+       ImGuiWindowFlags_NoMove |
+       ImGuiWindowFlags_NoResize |
+       ImGuiWindowFlags_NoScrollbar |
+       ImGuiWindowFlags_NoScrollWithMouse |
+       ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-   ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
+   // Let dockspace position the window
+   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+   ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+
    ImGui::Begin("Explorateur", nullptr, winFlags);
-   explorerID = ImGui::GetCurrentWindow()->ID;
 }
 
 static ImVec2 g_fbo_pos;
 static ImVec2 g_fbo_size;
 
 void endShaderPreview() {
-   if (availSize.x > 0 && availSize.y > 0) {
+    if (currentFBOw > 0 && currentFBOh > 0) {
+        // Get the window position and size
+        ImVec2 windowPos = ImGui::GetWindowPos();
+        ImVec2 windowSize = ImGui::GetWindowSize();
 
-      if ((int)availSize.x != currentFBOw || (int)availSize.y != currentFBOh)
-      {
-         std::cout << "Recréation du framebuffer avec la taille :" << "(" << availSize.x << ", " << availSize.y << ")" << std::endl;
-         currentFBOw = (int)availSize.x;
-         currentFBOh = (int)availSize.y;
-         initFBO(currentFBOw, currentFBOh);
-      }
+        // Check if window is docked and has a tab bar
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
 
-      auto texID = (ImTextureID)(intptr_t)colorTex;
-      ImGui::Image(texID, availSize, ImVec2(0, 1), ImVec2(1, 0));
+        // Get content region - this accounts for tab bar if present
+        ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+        ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
+        ImVec2 contentPos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
+        ImVec2 contentSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
 
-      ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        // Set cursor to the beginning of the content region (after tab bar)
+        ImGui::SetCursorPos(contentMin);
 
-      if (ImGui::IsItemClicked())
-      {
-         callback(ImGui::GetMousePos().x - rect.Min.x,ImGui::GetMousePos().y - rect.Min.y);
-      }
-   } else {
-      ImGui::Text("No preview available");
-   }
+        // Draw the texture - use the content size, not the FBO size
+        ImGui::Image(
+            (ImTextureID)(intptr_t)colorTex,
+            contentSize,  // Use content region size, not FBO size
+            ImVec2(0, 1), // UV min (bottom-left in OpenGL)
+            ImVec2(1, 0)  // UV max (top-right in OpenGL)
+        );
 
-   g_fbo_pos  = ImGui::GetItemRectMin();
-   g_fbo_size = ImVec2(currentFBOw, currentFBOh);
-   ImGui::End();
+        // Store the actual position and size for click handling
+        g_fbo_pos = ImGui::GetItemRectMin();
+        g_fbo_size = contentSize;
+
+        // Click handling
+        ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        if (ImGui::IsItemClicked()) {
+            ImVec2 mousePos = ImGui::GetMousePos();
+            callback(mousePos.x - rect.Min.x, mousePos.y - rect.Min.y);
+        }
+    } else {
+        ImGui::Text("No preview available");
+    }
+
+    // Pop all the style vars we pushed
+    ImGui::PopStyleVar(6);
+    ImGui::End();
 }
 
 std::array<float, 2> getFBOPos() {
@@ -258,67 +286,42 @@ std::array<float, 2> getFBOPos() {
    return val;
 }
 
-std::array<float, 2> getFBOSize() {
-   std::array<float, 2> val = {g_fbo_size.x, g_fbo_size.y};
-   return val;
-}
-
-
 void renderDockSpace()
 {
-   ImGuiViewport* vp = ImGui::GetMainViewport();
-   ImGui::SetNextWindowPos(vp->Pos);
-   ImGui::SetNextWindowSize(vp->Size);
-   ImGui::SetNextWindowViewport(vp->ID);
-
-   ImGuiWindowFlags host_flags =
-       ImGuiWindowFlags_NoTitleBar |
-       ImGuiWindowFlags_NoCollapse |
-       ImGuiWindowFlags_NoResize |
-       ImGuiWindowFlags_NoMove |
-       ImGuiWindowFlags_NoBringToFrontOnFocus |
-       ImGuiWindowFlags_NoNavFocus;
-
-   // remove padding so dockspace fills whole viewport
+   const ImGuiViewport* viewport = ImGui::GetMainViewport();
+   ImGui::SetNextWindowPos(viewport->WorkPos);
+   ImGui::SetNextWindowSize(viewport->WorkSize);
+   ImGui::SetNextWindowViewport(viewport->ID);
    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
-   ImGui::Begin("MainDockspace", nullptr, host_flags);
+   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+   ImGuiWindowFlags host_window_flags = 0;
+   host_window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+   host_window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+   host_window_flags |= ImGuiWindowFlags_NoDocking;
+   host_window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+   ImGui::Begin("DockSpace Demo", nullptr, host_window_flags);
    ImGui::PopStyleVar(3);
 
-   // Create the DockSpace (use size 0,0 so it fills the host window)
-   ImGuiID dockID = ImGui::GetID("MyDockspace");
-   ImGui::DockSpace(dockID, ImVec2(0,0), ImGuiDockNodeFlags_PassthruCentralNode);
+   ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+   ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
    static bool init_dock = true;
    if (init_dock)
    {
       init_dock = false;
+      ImGui::DockBuilderRemoveNode(dockspace_id);
+      ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+      ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
 
-      // Effacer l'ancien dock
-      ImGui::DockBuilderRemoveNode(dockID);
+      ImGuiID dock_main_id = dockspace_id;
+      ImGui::DockBuilderDockWindow("Explorateur", dock_main_id);
 
-      // Créer un dockspace racine
-      ImGui::DockBuilderAddNode(
-          dockID,
-          ImGuiDockNodeFlags_DockSpace
-      );
-
-      // Taille = taille fenetre entière
-      ImGui::DockBuilderSetNodeSize(
-          dockID,
-          ImGui::GetIO().DisplaySize
-      );
-
-      // Pas de split → un seul dock, 100% de la zone
-      ImGuiID centralNode = dockID;
-
-      // Docker la fenêtre dedans
-      ImGui::DockBuilderDockWindow("Explorateur", centralNode);
-
-      // Finaliser la construction
-      ImGui::DockBuilderFinish(dockID);
+      ImGui::DockBuilderFinish(dockspace_id);
    }
+
    ImGui::End();
 }
 
@@ -376,12 +379,19 @@ void loadTexture(const char* path, GLuint* tex) {
 
 void registerTexture() {
    loadTexture(prototypeTexturePath, &prototypeTexture);
+   loadTexture(arbreTexturePath, &arbreTexture);
 }
 
 void renderPreviewFractale(float sz,Fractale fractale) {
    ImVec2 p = ImGui::GetCursorScreenPos();
-   ImTextureID texID = (ImTextureID)(intptr_t)prototypeTexture;
-   if (!glIsTexture((GLuint)(intptr_t)texID)) {
+   auto texID = (ImTextureID)(intptr_t)prototypeTexture;
+   switch (fractale.numID) {
+      case 0: // Arbre
+         texID = (ImTextureID)(intptr_t)arbreTexture;
+         break;
+      default: ;
+   }
+  /* if (!glIsTexture((GLuint)(intptr_t)texID)) {
       // draw placeholder or skip
       ImGui::Text("[no tex]");
    } else {
@@ -394,7 +404,7 @@ void renderPreviewFractale(float sz,Fractale fractale) {
       );
    }
    ImGui::Dummy(ImVec2(sz, sz)); // Reserver de l'espace
-   ImGui::SameLine();
+   ImGui::SameLine();*/
    if (ImGui::MenuItem(fractale.name))
       setSelectedFractalesID(fractale.id);
 
@@ -407,7 +417,7 @@ void renderPreviewFractalesMenu() {
       float sz = ImGui::GetTextLineHeight()*sizeScale;
       ImGuiStyle& style = ImGui::GetStyle();
 
-      ImGui::PushFont(nullptr,style.FontSizeBase*sizeScale);
+      ImGui::PushFont(nullptr,style.FontSizeBase*2);
 
       renderPreviewFractale(sz,arbre);
       renderPreviewFractale(sz,arbre3);
@@ -433,27 +443,16 @@ float color_edit_timer = 0.0f;
 constexpr float COLOR_EDIT_TIMEOUT = 0.5f; // 500ms de délai
 
 void renderMenuBar() {
-   ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+   ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse;
 
    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 100)); // hauteur multiple
    ImGui::Begin("Options", nullptr, flags);
 
    ImGui::Text("Fractale: %s",selectedFractaleID);
    ImGui::OpenPopupOnItemClick("previewfractalesmenu");
-   ImGui::SameLine();
    if (ImGui::Button("Changer"))
       ImGui::OpenPopup("previewfractalesmenu");
    renderPreviewFractalesMenu();
-
-   ImGui::SameLine();
-   ImGui::BeginDisabled();
-   float taille = 1.0f;
-   float width = ImGui::GetContentRegionAvail().x * 0.2f;
-   ImGui::PushItemWidth(width);
-   ImGui::InputFloat("Taille",&taille,0.01);
-   taille = std::max(taille,0.0f);
-   ImGui::EndDisabled();
-   ImGui::SameLine();
 
    // Utiliser la couleur courante de la tortue
    std::array<float, 3> c = Turtle::instance().getColor();
@@ -476,29 +475,10 @@ void renderMenuBar() {
        color_changed = false;
    }
 
-   ImGui::SameLine();
-   ImGui::BeginDisabled();
-   float pos[2] = {0,0};
-   ImGui::InputFloat2("Position",pos);
-   ImGui::EndDisabled();
-
    // Next Line
    ImGui::SliderInt("Profondeur",&profondeur,1,10);
-   ImGui::SameLine();
-   ImGui::BeginDisabled();
-      float epaisseur = 1.0f;
-      ImGui::SliderFloat("Epaisseur",&epaisseur,0.0f,10.0f,"%.1f");
-      ImGui::SameLine();
-      float degrad[3] = {1,1,1};
-      ImGui::ColorEdit3("Dégradé", degrad, ImGuiColorEditFlags_NoInputs);
-      ImGui::SameLine();
-      bool en = true;
-      ImGui::Checkbox("Activé",&en);
-      ImGui::SameLine();
-      float zoom = 1.0f;
-      ImGui::SliderFloat("Zoom",&zoom,0.0f,1.0f);
-   ImGui::EndDisabled();
-   ImGui::SameLine();
+   ImGui::SliderAngle("Angle",&angle,0,360);
+
    if (ImGui::Button("Nettoyez")) {
       Turtle::instance().nettoyer();
    }
@@ -516,27 +496,40 @@ void updateColorEditTimer(float delta_time) {
     }
 }
 
-void ensureFBOSize(int w, int h)
-{
-    if (w <= 0 || h <= 0) return;
-    if (w == currentFBOw && h == currentFBOh) return;
-    currentFBOw = w; currentFBOh = h;
+void ensureFBOSize(int w, int h) {
+   if (w <= 0 || h <= 0) return;
+   if (w == currentFBOw && h == currentFBOh) return;
 
-    // (re)create texture storage sized to w,h
-    if (colorTex == 0) glGenTextures(1, &colorTex);
-    glBindTexture(GL_TEXTURE_2D, colorTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, currentFBOw, currentFBOh, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   currentFBOw = w;
+   currentFBOh = h;
 
-    if (fbo == 0) glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+   if (colorTex == 0) {
+      glGenTextures(1, &colorTex);
+   }
 
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE) printf("FBO error: %x\n", status);
+   glBindTexture(GL_TEXTURE_2D, colorTex);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   // Set proper texture parameters
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+   if (fbo == 0) {
+      glGenFramebuffers(1, &fbo);
+   }
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+
+   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+   if (status != GL_FRAMEBUFFER_COMPLETE) {
+      printf("FBO error: 0x%x\n", status);
+   }
+
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static float menuBarHeight = 47.0f;
@@ -548,36 +541,34 @@ float getMenuBarHeight() {return menuBarHeight;}
 
 void beginRenderShaderToFBO()
 {
-    // 1) Try content region avail (correct when inside window after menu bar)
-    ImVec2 contentAvail = ImGui::GetContentRegionAvail();
+   // Get the content region size - this accounts for tab bar
+   ImVec2 contentSize = ImGui::GetContentRegionAvail();
 
-    // 2) Fallback: compute from window size minus menubar and paddings
-    if (contentAvail.x <= 0.0f || contentAvail.y <= 0.0f) {
-        ImVec2 ws = ImGui::GetWindowSize();
-        ImGuiStyle& style = ImGui::GetStyle();
-        menuBarHeight = ImGui::GetFrameHeight(); // height of menu bar / frame
-        contentAvail.x = ws.x - style.WindowPadding.x * 2.0f;
-        contentAvail.y = ws.y - menuBarHeight - style.WindowPadding.y * 2.0f;
-    }
-   menuBarHeight = ImGui::GetFrameHeight();
-    // clamp to >= 1
-    int w = std::max(1, (int)floorf(contentAvail.x + 0.5f));
-    int h = std::max(1, (int)floorf(contentAvail.y + 0.5f));
-    availSize = ImVec2((float)w, (float)h);
-   currentFBOw = w;
-   currentFBOh = h;
-    // Ensure FBO size matches
-    ensureFBOSize(w, h);
+   // Use the content region size for FBO
+   int w = std::max(1, (int)contentSize.x);
+   int h = std::max(1, (int)contentSize.y);
 
-    // bind FBO and viewport
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glViewport(0, 0, w, h);
-   if (isPrinterCompatible()) glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-   else glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+   // Update FBO if size changed
+   if (w != currentFBOw || h != currentFBOh) {
+      currentFBOw = w;
+      currentFBOh = h;
+      ensureFBOSize(w, h);
+   }
+
+   // Bind FBO and set viewport
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glViewport(0, 0, currentFBOw, currentFBOh);
+
+   // Clear with appropriate color
+   if (isPrinterCompatible()) {
+      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+   } else {
+      glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+   }
+   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-
-void endRenderShaderToFBO() {
+void endRenderShaderToFBO()
+{
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

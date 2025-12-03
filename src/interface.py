@@ -20,7 +20,7 @@ class Interface:
 
         t.up()
         t.goto(x*100, y*100)
-        t.angle = Interface.selected_angle
+        t.angle = get_angle()
         t.down()
 
         setShowProgress(True)
