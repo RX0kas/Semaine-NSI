@@ -6,14 +6,14 @@ from ..application import Application # on peut utiliser ces deux methodes
 from src.fractales.ligne_koch import ligne_koch
 import src.cpp_backend as backend
 
-def flocon_koch(profondeur : int):
+def flocon_koch(profondeur : int,taille:int = 140):
     t = backend.get_turtle()
     t.left(180)
-    ligne_koch(profondeur,140)
+    ligne_koch(profondeur,taille)
     t.right(120)
-    ligne_koch(profondeur,140)
+    ligne_koch(profondeur,taille)
     t.right(120)
-    ligne_koch(profondeur,140)
+    ligne_koch(profondeur,taille)
 
 
 if __name__ == "__main__":

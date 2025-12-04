@@ -11,7 +11,7 @@ void main() {
         discard;
     }
 
-    if (inverted)
+    if (inverted && u_color.r+u_color.b+u_color.g>=250*3)
         FragColor = vec4(1-u_color.rbg,1.0);
     else
         FragColor = vec4(u_color.rbg,1.0);

@@ -35,6 +35,9 @@ Fractale courbe_levy = {arbreTexture,arbreTexturePath,"Courbe Levy","courbe_levy
 static float angle = 0;
 float getAngle() {return angle * (180.0 / M_PI);}
 
+static float longueur = 100;
+float getLongueur() {return longueur;}
+
 GLuint fbo = 0;
 int currentFBOw = 0;
 int currentFBOh = 0;
@@ -477,22 +480,30 @@ void renderMenuBar() {
        color_changed = true;
    }
 
-   // Appliquer la couleur seulement quand l'éditeur est désactivé
+   // appliquer la couleur seulement quand l'éditeur est désactivé
    if (ImGui::IsItemDeactivated() && color_changed) {
-       // Sauvegarder l'état avant de changer la couleur
        Turtle::instance().saveStateForUndo();
-       // Appliquer la nouvelle couleur
        Turtle::instance().setColor(pending_color[0], pending_color[1], pending_color[2]);
        color_changed = false;
    }
 
-   // Next Line
    ImGui::SliderInt("Profondeur",&profondeur,1,10);
+   ImGui::SliderFloat("Longueur",&longueur,10,300);
    ImGui::SliderAngle("Angle",&angle,0,360);
 
    if (ImGui::Button("Nettoyez")) {
       Turtle::instance().nettoyer();
    }
+
+   if (ImGui::Button("Annuler") && Turtle::instance().canUndo())
+      Turtle::instance().undo();
+
+   ImGui::SameLine();
+   if (ImGui::Button("Refaire") && Turtle::instance().canUndo())
+      Turtle::instance().undo();
+
+   if (ImGui::Button("Capture"))
+
    ImGui::End();
 }
 

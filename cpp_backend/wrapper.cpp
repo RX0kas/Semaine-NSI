@@ -387,4 +387,6 @@ PYBIND11_MODULE(cpp_backend, m) {
     }, py::return_value_policy::reference);
 
     m.def("initialize_glad", &TurtleRenderer::initializeGlad);
+
+    m.def("get_longueur", &getLongueur);
 }

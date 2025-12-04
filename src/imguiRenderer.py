@@ -7,7 +7,7 @@ class ImGuiRenderer:
         imgui.init_imgui()
         
         self.__window = window
-        self.__showDebug = True
+        self.__showDebug = False
         self.__lastPressed = 0.0
         self.__timer = 0.1  # anti-spam clavier
 

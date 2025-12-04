@@ -18,7 +18,7 @@ class Camera:
 
         # Zoom limits
         self.min_zoom: float = 1e-4
-        self.max_zoom: float = 1e3
+        self.max_zoom: float = 1e10
 
         # Interpolation / responsiveness
         self.zoom_speed: float = 8.0  # higher = zoom reaches target faster

@@ -10,6 +10,7 @@
 #include "glad/glad.h"
 
 float getAngle();
+float getLongueur();
 bool isPrinterCompatible();
 
 extern bool showScreenshotPreview;
