@@ -18,6 +18,7 @@ def courbe_carre_sierpinski(profondeur : int, taille : int = 1800):
 
 
 def courbe_carre_sierpinski_récur(profondeur : int, taille):
+    t = backend.get_turtle()
     if profondeur == 0:
         t.forward(taille)
     else:

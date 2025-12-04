@@ -17,6 +17,7 @@ def courbe_du_dragon(profondeur : int, taille : int = 180):
 
 
 def calcul_liste_direction(n):
+    t = backend.get_turtle()
     if n == 1:
         return [90]
     else:

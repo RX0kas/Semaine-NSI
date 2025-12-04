@@ -42,6 +42,25 @@ class Interface:
         elif selectedFractalesId == "ligne_koch":
             from src.fractales.ligne_koch import ligne_koch
             ligne_koch(get_profondeur())
+        elif selectedFractalesId == "courbe_carre_sierpinski":
+            from src.fractales.courbe_carre_de_sierpinski import courbe_carre_sierpinski
+            courbe_carre_sierpinski(get_profondeur())
+        elif selectedFractalesId == "courbe_de_hilbert":
+            from src.fractales.courbe_de_hilbert import courbe_de_hilbert
+            courbe_de_hilbert(get_profondeur())
+        elif selectedFractalesId == "courbe_sierpinski":
+            from src.fractales.courbe_de_sierpinski import courbe_sierpinski
+            courbe_sierpinski(get_profondeur())
+        elif selectedFractalesId == "courbe_du_dragon":
+            from src.fractales.courbe_du_dragon import courbe_du_dragon
+            courbe_du_dragon(get_profondeur())
+        elif selectedFractalesId == "courbe_en_fleche_sierpinski":
+            from src.fractales.courbe_en_fleche_de_sierpinski import courbe_en_fleche_sierpinski
+            courbe_en_fleche_sierpinski(get_profondeur())
+        elif selectedFractalesId == "courbe_levy":
+            from src.fractales.courbe_levy import courbe_levy
+            courbe_levy(get_profondeur())
+
         t.penup()
         t.pendown()
         setShowProgress(False)

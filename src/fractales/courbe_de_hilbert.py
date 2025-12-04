@@ -12,6 +12,7 @@ def courbe_de_hilbert(profondeur : int, taille : int = 180):
 
 
 def courbe_de_hilbert_récur1(profondeur : int, taille):
+    t = backend.get_turtle()
     if profondeur == 0:
         pass
     else:
@@ -31,6 +32,7 @@ def courbe_de_hilbert_récur1(profondeur : int, taille):
 
 
 def courbe_de_hilbert_récur2(profondeur : int, taille):
+    t = backend.get_turtle()
     if profondeur == 0:
         pass
     else:

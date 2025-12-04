@@ -12,6 +12,7 @@ def courbe_en_fleche_sierpinski(profondeur : int, taille : int = 180):
 
 
 def courbe_en_fleche_sierpinski_récur1(profondeur : int, taille):
+    t = backend.get_turtle()
     if profondeur == 0:
         pass
     else:
@@ -25,6 +26,7 @@ def courbe_en_fleche_sierpinski_récur1(profondeur : int, taille):
 
 
 def courbe_en_fleche_sierpinski_récur2(profondeur : int, taille):
+    t = backend.get_turtle()
     if profondeur == 0:
         pass
     else:

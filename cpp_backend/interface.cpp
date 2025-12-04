@@ -21,6 +21,12 @@ Fractale courbe_de_koch_quadratique = {prototypeTexture,prototypeTexturePath,"Co
 Fractale courbe_de_koch_quadratique_inv = {prototypeTexture,prototypeTexturePath,"Courbe de Koch Quadratique Inversé","courbe_de_koch_quadratique_inv",3};
 Fractale flocon_koch = {prototypeTexture,prototypeTexturePath,"Flocon de Koch","flocon_koch",4};
 Fractale ligne_koch = {prototypeTexture,prototypeTexturePath,"Ligne de Koch","ligne_koch",5};
+Fractale courbe_carre_sierpinski = {arbreTexture,arbreTexturePath,"Courbe Carre Sierpinski","courbe_carre_sierpinski",6};
+Fractale courbe_de_hilbert = {arbreTexture,arbreTexturePath,"Courbe de hilbert","courbe_de_hilbert",7};
+Fractale courbe_sierpinski = {arbreTexture,arbreTexturePath,"Courbe Sierpinski","courbe_sierpinski",8};
+Fractale courbe_du_dragon = {arbreTexture,arbreTexturePath,"Courbe du dragon","courbe_du_dragon",9};
+Fractale courbe_en_fleche_sierpinski = {arbreTexture,arbreTexturePath,"Courbe en fleche sierpinski","courbe_en_fleche_sierpinski",10};
+Fractale courbe_levy = {arbreTexture,arbreTexturePath,"Courbe Levy","courbe_levy",11};
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -425,7 +431,12 @@ void renderPreviewFractalesMenu() {
       renderPreviewFractale(sz,courbe_de_koch_quadratique_inv);
       renderPreviewFractale(sz,flocon_koch);
       renderPreviewFractale(sz,ligne_koch);
-
+      renderPreviewFractale(sz,courbe_carre_sierpinski);
+      renderPreviewFractale(sz,courbe_de_hilbert);
+      renderPreviewFractale(sz,courbe_sierpinski);
+      renderPreviewFractale(sz,courbe_du_dragon);
+      renderPreviewFractale(sz,courbe_en_fleche_sierpinski);
+      renderPreviewFractale(sz,courbe_levy);
       ImGui::PopFont();
       ImGui::EndPopup();
    }
@@ -445,7 +456,7 @@ constexpr float COLOR_EDIT_TIMEOUT = 0.5f; // 500ms de délai
 void renderMenuBar() {
    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse;
 
-   ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 100)); // hauteur multiple
+   //ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 100)); // hauteur multiple
    ImGui::Begin("Options", nullptr, flags);
 
    ImGui::Text("Fractale: %s",selectedFractaleID);
