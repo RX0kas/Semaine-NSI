@@ -586,7 +586,7 @@ void endRenderShaderToFBO()
 
       // Click handling
       ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-      if (ImGui::IsItemClicked()) {
+      if (ImGui::IsItemHovered(ImGuiHoveredFlags_None) && glfwGetKey(glfwGetCurrentContext(),GLFW_KEY_SPACE)==GLFW_PRESS) {
          ImVec2 mousePos = ImGui::GetMousePos();
          callback(mousePos.x - rect.Min.x, mousePos.y - rect.Min.y);
       }
