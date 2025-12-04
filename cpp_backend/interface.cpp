@@ -232,63 +232,17 @@ void beginShaderPreview() {
        ImGuiWindowFlags_NoBringToFrontOnFocus;
 
    // Let dockspace position the window
-   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-   ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-   ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-   ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-   ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+   //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+   //ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+   //ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+   //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+   //ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+   //ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
 
    ImGui::Begin("Explorateur", nullptr, winFlags);
 }
 
 static ImVec2 g_fbo_pos;
-static ImVec2 g_fbo_size;
-
-void endShaderPreview() {
-    if (currentFBOw > 0 && currentFBOh > 0) {
-        // Get the window position and size
-        ImVec2 windowPos = ImGui::GetWindowPos();
-        ImVec2 windowSize = ImGui::GetWindowSize();
-
-        // Check if window is docked and has a tab bar
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-
-        // Get content region - this accounts for tab bar if present
-        ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
-        ImVec2 contentMax = ImGui::GetWindowContentRegionMax();
-        ImVec2 contentPos = ImVec2(windowPos.x + contentMin.x, windowPos.y + contentMin.y);
-        ImVec2 contentSize = ImVec2(contentMax.x - contentMin.x, contentMax.y - contentMin.y);
-
-        // Set cursor to the beginning of the content region (after tab bar)
-        ImGui::SetCursorPos(contentMin);
-
-        // Draw the texture - use the content size, not the FBO size
-        ImGui::Image(
-            (ImTextureID)(intptr_t)colorTex,
-            contentSize,  // Use content region size, not FBO size
-            ImVec2(0, 1), // UV min (bottom-left in OpenGL)
-            ImVec2(1, 0)  // UV max (top-right in OpenGL)
-        );
-
-        // Store the actual position and size for click handling
-        g_fbo_pos = ImGui::GetItemRectMin();
-        g_fbo_size = contentSize;
-
-        // Click handling
-        ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-        if (ImGui::IsItemClicked()) {
-            ImVec2 mousePos = ImGui::GetMousePos();
-            callback(mousePos.x - rect.Min.x, mousePos.y - rect.Min.y);
-        }
-    } else {
-        ImGui::Text("No preview available");
-    }
-
-    // Pop all the style vars we pushed
-    ImGui::PopStyleVar(6);
-    ImGui::End();
-}
 
 std::array<float, 2> getFBOPos() {
    std::array<float, 2> val = {g_fbo_pos.x, g_fbo_pos.y};
@@ -471,8 +425,8 @@ void renderMenuBar() {
    // Utiliser la couleur courante de la tortue
    std::array<float, 3> c = Turtle::instance().getColor();
    float color[3] = {c[0],c[1],c[2]};
-
    bool color_edited = ImGui::ColorEdit3("Couleur", color, ImGuiColorEditFlags_NoInputs);
+   //printf("color before set color %f,%f,%f\n", color[0], color[1], color[2]);
 
    if (color_edited) {
        // Stocker la couleur temporairement
@@ -499,10 +453,11 @@ void renderMenuBar() {
       Turtle::instance().undo();
 
    ImGui::SameLine();
-   if (ImGui::Button("Refaire") && Turtle::instance().canUndo())
-      Turtle::instance().undo();
+   if (ImGui::Button("Refaire") && Turtle::instance().canRedo())
+      Turtle::instance().redo();
 
    if (ImGui::Button("Capture"))
+      showScreenshotPreview = true;
 
    ImGui::End();
 }
@@ -561,36 +516,126 @@ std::array<int,2> getFrameSize() {
 
 float getMenuBarHeight() {return menuBarHeight;}
 
-void beginRenderShaderToFBO()
+/*void beginRenderShaderToFBO()
 {
-   // Get the content region size - this accounts for tab bar
-   ImVec2 contentSize = ImGui::GetContentRegionAvail();
+   // Récupération correcte de la zone de rendu disponible
+   ImVec2 cr_min = ImGui::GetWindowContentRegionMin();
+   ImVec2 cr_max = ImGui::GetWindowContentRegionMax();
+   ImVec2 win_pos = ImGui::GetWindowPos();
 
-   // Use the content region size for FBO
-   int w = std::max(1, (int)contentSize.x);
-   int h = std::max(1, (int)contentSize.y);
+   float avail_w = cr_max.x - cr_min.x;
+   float avail_h = cr_max.y - cr_min.y;
 
-   // Update FBO if size changed
-   if (w != currentFBOw || h != currentFBOh) {
-      currentFBOw = w;
-      currentFBOh = h;
-      ensureFBOSize(w, h);
+   // fallback si quelque chose échoue
+   if (avail_w < 1.f || avail_h < 1.f) {
+      avail_w = ImGui::GetWindowSize().x;
+      avail_h = ImGui::GetWindowSize().y;
    }
 
-   // Bind FBO and set viewport
-   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-   glViewport(0, 0, currentFBOw, currentFBOh);
+   int w = std::max(1, (int)floorf(avail_w));
+   int h = std::max(1, (int)floorf(avail_h));
 
-   // Clear with appropriate color
+   currentFBOw = w;
+   currentFBOh = h;
+
+   ensureFBOSize(w, h);
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glViewport(0, 0, w, h);
+
+   if (isPrinterCompatible()) glClearColor(1,1,1,1);
+   else glClearColor(0.1f,0.1f,0.1f,1);
+
+   glClear(GL_COLOR_BUFFER_BIT);
+}*/
+
+static int w,h;
+
+void beginRenderShaderToFBO() {
+   // 1) Obtenir la vraie taille finale
+   ImVec2 contentAvail = ImGui::GetContentRegionAvail();
+
+   w = (int)contentAvail.x;
+   h = (int)contentAvail.y;
+
+   ensureFBOSize(w, h);
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glViewport(0, 0, w, h);
    if (isPrinterCompatible()) {
       glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
    } else {
       glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
    }
+
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
+
+
 void endRenderShaderToFBO()
 {
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   if (currentFBOw > 0 && currentFBOh > 0 && colorTex != 0) {
+      // Draw the texture at the current cursor position
+      ImGui::Image((ImTextureID)(intptr_t)colorTex,
+                   ImVec2(static_cast<float>(currentFBOw), static_cast<float>(currentFBOh)),
+                   ImVec2(0,1), ImVec2(1,0));
+
+      // Store position for click handling
+      g_fbo_pos = ImGui::GetItemRectMin();
+
+      // Click handling
+      ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+      if (ImGui::IsItemClicked()) {
+         ImVec2 mousePos = ImGui::GetMousePos();
+         callback(mousePos.x - rect.Min.x, mousePos.y - rect.Min.y);
+      }
+   } else {
+      ImGui::Text("No preview available");
+   }
 }
+
+void endShaderPreview() {
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+   // 2) Affichage dans la fenêtre
+   ImGui::Image((ImTextureID)(intptr_t)colorTex,
+                ImVec2(static_cast<float>(w), static_cast<float>(h)),
+                ImVec2(0,1), ImVec2(1,0));
+
+   ImGui::End();
+     /*if (currentFBOw > 0 && currentFBOh > 0) {
+      // Get content region - this accounts for tab bar if present
+      ImVec2 contentMin = ImGui::GetWindowContentRegionMin();
+
+      // Set cursor to the beginning of the content region (after tab bar)
+      ImGui::SetCursorPos(contentMin);
+
+      // Draw the texture - use the content size, not the FBO size
+      ImGui::Image((ImTextureID)(intptr_t)colorTex,
+                ImVec2(w, h),
+                ImVec2(0,1), ImVec2(1,0));
+
+      // Store the actual position and size for click handling
+      g_fbo_pos = ImGui::GetItemRectMin();
+
+      // Click handling
+      ImRect rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+      if (ImGui::IsItemClicked()) {
+         ImVec2 mousePos = ImGui::GetMousePos();
+         callback(mousePos.x - rect.Min.x, mousePos.y - rect.Min.y);
+      }
+   } else {
+      ImGui::Text("No preview available");
+   }*/
+
+   // Pop all the style vars we pushed
+   //ImGui::PopStyleVar(5);
+   //ImGui::End();
+}
+
+
+/*void endRenderShaderToFBO()
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}*/

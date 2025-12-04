@@ -70,24 +70,32 @@ class Camera:
         Interface.placeFractale(posToWorld[0], posToWorld[1])
 
     # ------------------ Coordinate conversions ------------------
-    def screen_to_world(self, mouse_x: float, mouse_y: float):
+    def screen_to_world(self, mouse_x: float, mouse_y: float) -> np.ndarray | None:
         w, h = backend.get_frame_size()
 
-        # Sécurité basique
         if w <= 0 or h <= 0:
             return np.array([self.x, self.y], dtype=np.float64)
 
-        # Optionnel : ignorer les clics hors FBO
+        # hors du FBO -> ignore
         if mouse_x < 0 or mouse_y < 0 or mouse_x > w or mouse_y > h:
             return None
 
-        # Screen → NDC
+        # Screen -> NDC [-1,1]
         nx = (mouse_x / w) * 2.0 - 1.0
         ny = 1.0 - (mouse_y / h) * 2.0
 
-        # NDC → World (inverse de la matrice C++)
-        world_x = (nx / self.zoom) + self.x
-        world_y = (ny / self.zoom) + self.y
+        # Shader fait :
+        #   ndc_x = (zoom * (world_x - cam_x)) / aspect
+        #   ndc_y =  zoom * (world_y - cam_y)
+        #
+        # donc l'inverse est :
+        #   world_x = (ndc_x * aspect) / zoom + cam_x
+        #   world_y = (ndc_y)          / zoom + cam_y
+
+        aspect = w / h
+
+        world_x = (nx * aspect) / self.zoom + self.x
+        world_y = (ny) / self.zoom + self.y
 
         return np.array([world_x, world_y], dtype=np.float64)
 

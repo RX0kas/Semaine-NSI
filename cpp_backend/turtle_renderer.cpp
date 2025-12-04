@@ -475,16 +475,27 @@ void TurtleRenderer::setCamera(float camera_x_, float camera_y_, float zoom_) {
 // we want matrix: [s 0 tx; 0 s ty; 0 0 1] so memory (col-major) = {s,0,0, 0,s,0, tx,ty,1}
 void TurtleRenderer::updateViewMatrix()
 {
-    float s = zoom;
+    auto FBOsize = getFrameSize();
+    float w = (float)FBOsize[0];
+    float h = (float)FBOsize[1];
 
+    float s = zoom;
+    float aspect = w / h;
+
+    // Correction : le scale X doit être s, pas s/aspect
+    float sx = s;
+    float sy = s;
+
+    // Translation
     float tx = -camera_x * s;
     float ty = -camera_y * s;
 
-    // Column-major: [ m00 m10 m20, m01 m11 m21, m02 m12 m22 ]
-    view_matrix[0] = s;     view_matrix[1] = 0.0f;  view_matrix[2] = 0.0f;
-    view_matrix[3] = 0.0f;  view_matrix[4] = s;     view_matrix[5] = 0.0f;
-    view_matrix[6] = tx;    view_matrix[7] = ty;    view_matrix[8] = 1.0f;
+    // Matrice sans déformation (column-major)
+    view_matrix[0] = sx; view_matrix[1] = 0;  view_matrix[2] = 0;
+    view_matrix[3] = 0;  view_matrix[4] = sy; view_matrix[5] = 0;
+    view_matrix[6] = tx; view_matrix[7] = ty; view_matrix[8] = 1;
 }
+
 
 
 void TurtleRenderer::drawTurtle(const Turtle &t) {
@@ -641,6 +652,8 @@ void TurtleRenderer::render() {
 
     // 4) upload + draw
     glUseProgram(s.getProgram());
+    auto FBOsize = getFrameSize();
+    s.setFloat("uAspect",(float) FBOsize[0] / (float) FBOsize[1]);
     s.setMat4f("viewmatrix",view_matrix);
     s.setBool("inverted",isPrinterCompatible());
 
