@@ -29,7 +29,7 @@ static inline float percentToWorld(float p) {
 
 Turtle::Turtle(float ix, float iy, float iangle)
 : x(percentToWorld(ix)), y(percentToWorld(iy)), angle(iangle),
-  pen_down(true), show_turtle(true), turtle_size(0.05f),
+  pen_down(true), show_turtle(false), turtle_size(0.05f),
   vertex_count(0), current_path_start(-1),
   current_minx(0), current_miny(0), current_maxx(0), current_maxy(0)
 {
@@ -499,6 +499,7 @@ void TurtleRenderer::updateViewMatrix()
 
 
 void TurtleRenderer::drawTurtle(const Turtle &t) {
+    return;
     // Draw a small triangle oriented by t.getAngle() at (t.getX(), t.getY())
     float size = t.getTurtleSize();
     // triangle in local space
