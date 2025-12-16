@@ -5,3 +5,5 @@ __pycache__
 cpp_backend/build/
 cpp_backend/cmake-build-debug
 cpp_backend/cmake-build-release
+.vscode
+imgui.ini

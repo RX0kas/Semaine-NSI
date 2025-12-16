@@ -8,8 +8,10 @@ from src.imguiRenderer import ImGuiRenderer
 import src.cpp_backend as backend
 
 class Application:
+    VERSION = "1.0.0"
+    
     def __init__(self):
-        self.__fenetre = Window(800, 600, "Test fenetre")
+        self.__fenetre = Window(800, 600, "Createur fractales - "+Application.VERSION)
         win = self.__fenetre.getWindow()
         glfw.make_context_current(win)
         backend.TurtleRenderer.initialize_glad()
