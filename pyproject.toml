@@ -11,5 +11,4 @@ dependencies = [
     "glfw ~= 2.10.0",
     "numpy ~= 2.3.3",
     "pyopengl ~= 3.1.10",
-    "imgui-bundle ~= 1.92.4",
 ]
